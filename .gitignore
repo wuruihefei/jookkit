@@ -1,0 +1,8 @@
+build/
+dist/
+*.o
+moc_*
+ui_*
+*.user
+target/
+.idea/

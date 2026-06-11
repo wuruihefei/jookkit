@@ -7,8 +7,10 @@ INCLUDEPATH += src
 
 SOURCES += \
     tests/tst_conndata.cpp \
-    src/backend/ConnData.cpp
+    src/backend/ConnData.cpp \
+    src/backend/BackendClient.cpp
 
 HEADERS += \
     src/backend/ConnData.h \
+    src/backend/BackendClient.h \
     src/backend/FuncId.h

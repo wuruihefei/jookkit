@@ -3,6 +3,19 @@
 #include <QElapsedTimer>
 #include <QRegularExpression>
 #include <QCoreApplication>
+#include <QFileInfo>
+
+// 优先使用打包内置的 JRE(exe 同目录的 jre/bin/java[.exe]),否则回退到 PATH 中的 java。
+static QString resolveJava() {
+    const QString dir = QCoreApplication::applicationDirPath();
+    const QStringList cands = {
+        dir + "/jre/bin/java.exe",
+        dir + "/jre/bin/java"
+    };
+    for (const QString &c : cands)
+        if (QFileInfo::exists(c)) return c;
+    return "java";
+}
 
 BackendProcess::BackendProcess(const QString &jarPath, QObject *parent)
     : QObject(parent), jarPath_(jarPath), proc_(new QProcess(this)) {
@@ -12,7 +25,7 @@ BackendProcess::BackendProcess(const QString &jarPath, QObject *parent)
 BackendProcess::~BackendProcess() { stop(); }
 
 bool BackendProcess::start(int handshakeTimeoutMs) {
-    proc_->start("java", {"-jar", jarPath_, "--port", "0"});
+    proc_->start(resolveJava(), {"-jar", jarPath_, "--port", "0"});
     if (!proc_->waitForStarted(5000)) return false;
 
     QElapsedTimer timer;

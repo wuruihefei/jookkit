@@ -1,5 +1,6 @@
 #include "ui/QueryForm.h"
 #include "ui/SqlEditor.h"
+#include "ui/Icons.h"
 #include "sql/SqlSplitter.h"
 #include "sql/SqlFormat.h"
 #include "backend/BackendClient.h"
@@ -37,13 +38,14 @@ QueryForm::QueryForm(BackendClient *client, const QList<ConnData> &conns,
     dbCombo_->setMinimumWidth(160);
 
     auto *topBar = new QToolBar;
+    topBar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     topBar->addWidget(connCombo_);
     topBar->addWidget(dbCombo_);
     topBar->addSeparator();
-    topBar->addAction(tr("▶ 运行"), this, &QueryForm::run);
+    topBar->addAction(Icons::run(), tr("运行"), this, &QueryForm::run);
     topBar->addAction(tr("运行选中"), this, &QueryForm::runCurrent);
     topBar->addAction(tr("格式化"), this, &QueryForm::formatSql);
-    topBar->addAction(tr("保存"), this, &QueryForm::saveSql);
+    topBar->addAction(Icons::save(), tr("保存"), this, &QueryForm::saveSql);
 
     editor_ = new SqlEditor;
     grid_ = new QTableWidget;

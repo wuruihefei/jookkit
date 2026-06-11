@@ -8,6 +8,7 @@
 
 class QTabWidget;
 class QWidget;
+class QToolButton;
 class ObjectTree;
 class InformationPane;
 class BackendClient;
@@ -55,6 +56,7 @@ private:
     ObjectTree *tree_;
     QTabWidget *tabs_;
     InformationPane *info_;
+    QToolButton *infoToggle_ = nullptr;
 };
 
 #endif

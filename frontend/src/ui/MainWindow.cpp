@@ -68,8 +68,6 @@ void MainWindow::buildToolBar() {
     mainTb_->addSeparator();
     mainTb_->addAction(Icons::data(), tr("打开数据"), content_, &ContentWidget::viewCurrentData);
     mainTb_->addAction(Icons::structure(), tr("查看结构"), content_, &ContentWidget::viewCurrentStructure);
-    mainTb_->addSeparator();
-    mainTb_->addAction(Icons::save(), tr("保存"), this, &MainWindow::saveCurrentQuery);
 }
 
 void MainWindow::buildMenus() {
@@ -117,7 +115,7 @@ void MainWindow::buildMenus() {
     navAct->setCheckable(true); navAct->setChecked(true);
     connect(navAct, &QAction::toggled, content_, &ContentWidget::setSidebarVisible);
     QAction *infoAct = viewMenu->addAction(tr("信息窗格"));
-    infoAct->setCheckable(true); infoAct->setChecked(true);
+    infoAct->setCheckable(true); infoAct->setChecked(false);  // 默认最小化
     connect(infoAct, &QAction::toggled, content_, &ContentWidget::setInfoVisible);
     viewMenu->addSeparator();
     QAction *tbAct = viewMenu->addAction(tr("主工具栏"));

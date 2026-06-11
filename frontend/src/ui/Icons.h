@@ -14,6 +14,8 @@ namespace Icons {
     QIcon structure();   // 表结构(列)
     QIcon refresh();
     QIcon save();
+    QIcon add();         // 新增(绿色+)
+    QIcon remove();      // 删除(红色-)
     QIcon app();         // 应用图标
 }
 

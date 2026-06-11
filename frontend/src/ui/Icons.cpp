@@ -153,6 +153,31 @@ QIcon save() {
     return fromPm(pm);
 }
 
+QIcon add() {
+    QPixmap pm = base();
+    QPainter p(&pm);
+    p.setRenderHint(QPainter::Antialiasing);
+    p.setPen(Qt::NoPen);
+    p.setBrush(QColor("#16a34a"));
+    p.drawEllipse(QPointF(16, 16), 11, 11);
+    p.setPen(QPen(QColor("#ffffff"), 2.6));
+    p.drawLine(16, 10, 16, 22);
+    p.drawLine(10, 16, 22, 16);
+    return fromPm(pm);
+}
+
+QIcon remove() {
+    QPixmap pm = base();
+    QPainter p(&pm);
+    p.setRenderHint(QPainter::Antialiasing);
+    p.setPen(Qt::NoPen);
+    p.setBrush(QColor("#dc2626"));
+    p.drawEllipse(QPointF(16, 16), 11, 11);
+    p.setPen(QPen(QColor("#ffffff"), 2.6));
+    p.drawLine(10, 16, 22, 16);
+    return fromPm(pm);
+}
+
 QIcon app() {
     QPixmap pm = base(64);
     QPainter p(&pm);

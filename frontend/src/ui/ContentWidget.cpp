@@ -11,6 +11,7 @@
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QToolBar>
+#include <QToolButton>
 #include <QTreeWidget>
 #include <QMessageBox>
 
@@ -38,13 +39,31 @@ ContentWidget::ContentWidget(BackendClient *client, QWidget *parent)
     lv->setSpacing(0);
     lv->addWidget(tree_, 1);
 
-    // 右:标签页 + 信息窗格
+    // 右:标签页 +(可折叠、默认最小化的)信息窗格
+    infoToggle_ = new QToolButton;
+    infoToggle_->setAutoRaise(true);
+    infoToggle_->setCheckable(true);
+    infoToggle_->setToolButtonStyle(Qt::ToolButtonTextOnly);
+    infoToggle_->setText(tr(" ▸ 信息"));
+    connect(infoToggle_, &QToolButton::toggled, this, &ContentWidget::setInfoVisible);
+
+    auto *infoHdr = new QToolBar;
+    infoHdr->setObjectName("objectToolBar");
+    infoHdr->addWidget(infoToggle_);
+
+    auto *infoWrap = new QWidget;
+    auto *iv = new QVBoxLayout(infoWrap);
+    iv->setContentsMargins(0, 0, 0, 0);
+    iv->setSpacing(0);
+    iv->addWidget(infoHdr);
+    iv->addWidget(info_);
+    info_->setVisible(false);   // 默认最小化(只留标题条)
+
     auto *rightSplit = new QSplitter(Qt::Vertical);
     rightSplit->addWidget(tabs_);
-    rightSplit->addWidget(info_);
-    rightSplit->setStretchFactor(0, 3);
-    rightSplit->setStretchFactor(1, 1);
-    rightSplit->setSizes({500, 180});
+    rightSplit->addWidget(infoWrap);
+    rightSplit->setStretchFactor(0, 5);
+    rightSplit->setStretchFactor(1, 0);
 
     auto *mainSplit = new QSplitter;
     mainSplit->addWidget(leftPanel_);
@@ -66,6 +85,7 @@ QueryForm *ContentWidget::currentQueryForm() const {
 }
 
 void ContentWidget::updateInfo() {
+    if (!info_->isVisible()) return;   // 最小化时不拉取,省开销
     QString table = tree_->currentTable();
     if (table.isEmpty()) info_->clearInfo();
     else info_->showTable(tree_->currentConnId(), tree_->currentDb(), table);
@@ -74,7 +94,14 @@ void ContentWidget::updateInfo() {
 bool ContentWidget::isSidebarVisible() const { return leftPanel_->isVisible(); }
 bool ContentWidget::isInfoVisible() const { return info_->isVisible(); }
 void ContentWidget::setSidebarVisible(bool on) { leftPanel_->setVisible(on); }
-void ContentWidget::setInfoVisible(bool on) { info_->setVisible(on); }
+void ContentWidget::setInfoVisible(bool on) {
+    info_->setVisible(on);
+    if (infoToggle_) {
+        infoToggle_->setChecked(on);
+        infoToggle_->setText(on ? tr(" ▾ 信息") : tr(" ▸ 信息"));
+    }
+    if (on) updateInfo();   // 展开时按当前选中刷新
+}
 void ContentWidget::toggleSidebar() { setSidebarVisible(!isSidebarVisible()); }
 void ContentWidget::toggleInfo() { setInfoVisible(!isInfoVisible()); }
 

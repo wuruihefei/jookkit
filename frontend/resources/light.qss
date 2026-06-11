@@ -50,10 +50,13 @@ QComboBox::drop-down { border: none; width: 18px; }
 QTreeWidget, QTableWidget, QTableView, QTreeView, QListWidget {
     background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px;
     gridline-color: #eef2f6; alternate-background-color: #f8fafc; outline: 0;
+    show-decoration-selected: 1;   /* 选中高亮覆盖整行(含缩进/分支),消除默认蓝块 */
+    selection-background-color: #ccfbf1; selection-color: #134e4a;
 }
 QTreeView::item, QTreeWidget::item { padding: 3px 2px; }
 QTableView::item:selected, QTreeView::item:selected,
 QTableWidget::item:selected, QTreeWidget::item:selected { background: #ccfbf1; color: #134e4a; }
+QTreeView::branch:selected, QTreeWidget::branch:selected { background: #ccfbf1; }
 QHeaderView::section {
     background: #f1f5f9; color: #475569; padding: 6px 8px; border: none;
     border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;

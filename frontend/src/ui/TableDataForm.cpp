@@ -1,4 +1,5 @@
 #include "ui/TableDataForm.h"
+#include "ui/Icons.h"
 #include "backend/BackendClient.h"
 #include "backend/FuncId.h"
 
@@ -21,10 +22,11 @@ TableDataForm::TableDataForm(BackendClient *client, const QString &connId,
     if (pageSize_ <= 0) pageSize_ = 200;
 
     auto *toolbar = new QToolBar;
-    toolbar->addAction(tr("刷新"), this, &TableDataForm::reload);
-    toolbar->addAction(tr("新增行"), this, &TableDataForm::addRow);
-    toolbar->addAction(tr("保存新行"), this, &TableDataForm::saveNewRows);
-    toolbar->addAction(tr("删除行"), this, &TableDataForm::deleteSelectedRow);
+    toolbar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    toolbar->addAction(Icons::refresh(), tr("刷新"), this, &TableDataForm::reload);
+    toolbar->addAction(Icons::add(), tr("新增行"), this, &TableDataForm::addRow);
+    toolbar->addAction(Icons::save(), tr("保存新行"), this, &TableDataForm::saveNewRows);
+    toolbar->addAction(Icons::remove(), tr("删除行"), this, &TableDataForm::deleteSelectedRow);
     toolbar->addSeparator();
     toolbar->addAction(tr("◀ 上一页"), this, &TableDataForm::prevPage);
     toolbar->addAction(tr("下一页 ▶"), this, &TableDataForm::nextPage);

@@ -22,6 +22,7 @@
 #include <QTextStream>
 #include <QStatusBar>
 #include <QKeySequence>
+#include <QCloseEvent>
 
 MainWindow::MainWindow(const QString &jarPath, QWidget *parent)
     : QMainWindow(parent),
@@ -170,6 +171,13 @@ void MainWindow::newConnection() {
         return;
     }
     ConnectionStore::save(content_->allConnections());  // 持久化
+    statusBar()->showMessage(tr("连接已保存"), 3000);
+}
+
+void MainWindow::closeEvent(QCloseEvent *event) {
+    // 关闭时再保存一次,确保任何连接变更落盘
+    if (content_) ConnectionStore::save(content_->allConnections());
+    QMainWindow::closeEvent(event);
 }
 
 void MainWindow::openOptions() {

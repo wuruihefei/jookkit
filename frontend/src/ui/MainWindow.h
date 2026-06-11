@@ -15,6 +15,9 @@ class MainWindow : public QMainWindow {
 public:
     explicit MainWindow(const QString &jarPath, QWidget *parent = nullptr);
 
+protected:
+    void closeEvent(QCloseEvent *event) override;
+
 private slots:
     void newConnection();
     void saveCurrentQuery();

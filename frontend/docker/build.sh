@@ -8,10 +8,12 @@ TGT=/usr/lib/mxe/usr/x86_64-w64-mingw32.shared
 SEARCH="$TGT/bin $TGT/qt5/bin"
 
 rm -rf /tmp/b && mkdir -p /tmp/b
-cp -r /work/src /work/jookkit.pro /tmp/b/
+# 拷贝工程全部输入(含资源),否则带 RESOURCES 的 .pro 会构建异常
+cp -r /work/src /work/jookkit.pro /work/resources.qrc /work/resources /tmp/b/
 cd /tmp/b
 "$QMAKE" jookkit.pro >/dev/null
-make -j4 >/dev/null 2>&1
+touch Makefile   # 防止 make 因 .pro 较新而反复重跑 qmake(空转死循环)
+timeout 600 make -j4 > /out/build.log 2>&1
 
 DEST=/out/JookKit
 rm -rf "$DEST" && mkdir -p "$DEST/platforms"

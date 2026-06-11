@@ -19,6 +19,8 @@ private slots:
     void newConnection();
     void saveCurrentQuery();
     void executeSqlFile();
+    void openOptions();
+    void openFindReplace();
     void about();
 
 private:

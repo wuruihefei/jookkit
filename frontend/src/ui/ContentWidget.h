@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <QString>
+#include <QList>
 #include "backend/ConnData.h"
 
 class QTabWidget;
@@ -19,6 +20,8 @@ public:
     explicit ContentWidget(BackendClient *client, QWidget *parent = nullptr);
 
     bool addConnection(const ConnData &c);
+    void addSavedConnection(const ConnData &c);
+    QList<ConnData> allConnections() const;
     ObjectTree *tree() const { return tree_; }
     QueryForm *currentQueryForm() const;
 

@@ -6,6 +6,8 @@ TEMPLATE = app
 
 INCLUDEPATH += src
 
+win32: RC_ICONS = resources/jookkit.ico
+
 RESOURCES += resources.qrc
 
 SOURCES += \
@@ -19,9 +21,13 @@ SOURCES += \
     src/ui/TableDataForm.cpp \
     src/ui/InformationPane.cpp \
     src/ui/Icons.cpp \
+    src/ui/OptionsDialog.cpp \
+    src/ui/FindReplaceDialog.cpp \
     src/ui/SqlEditor.cpp \
     src/sql/SqlSplitter.cpp \
     src/sql/SqlHighlighter.cpp \
+    src/sql/SqlFormat.cpp \
+    src/store/ConnectionStore.cpp \
     src/backend/ConnData.cpp \
     src/backend/BackendProcess.cpp \
     src/backend/BackendClient.cpp
@@ -36,9 +42,13 @@ HEADERS += \
     src/ui/TableDataForm.h \
     src/ui/InformationPane.h \
     src/ui/Icons.h \
+    src/ui/OptionsDialog.h \
+    src/ui/FindReplaceDialog.h \
     src/ui/SqlEditor.h \
     src/sql/SqlSplitter.h \
     src/sql/SqlHighlighter.h \
+    src/sql/SqlFormat.h \
+    src/store/ConnectionStore.h \
     src/backend/ConnData.h \
     src/backend/BackendProcess.h \
     src/backend/BackendClient.h \

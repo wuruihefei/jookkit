@@ -3,6 +3,7 @@
 
 #include <QString>
 #include <QJsonObject>
+#include <QMetaType>
 
 class ConnData {
 public:
@@ -22,5 +23,7 @@ public:
 private:
     QJsonObject toRequest(int funcId) const;
 };
+
+Q_DECLARE_METATYPE(ConnData)
 
 #endif

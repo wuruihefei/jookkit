@@ -15,13 +15,19 @@ public:
         NodeTypeRole = Qt::UserRole + 1,
         ConnIdRole,
         DbRole,
-        LoadedRole
+        LoadedRole,
+        ConnDataRole,
+        OpenedRole
     };
 
     explicit ObjectTree(BackendClient *client, QWidget *parent = nullptr);
 
     // 打开连接(OPEN_CONNECTION)并把数据库挂为子节点。成功返回 true。
     bool addConnection(const ConnData &c);
+    // 添加已保存连接(不立即连接,展开时才打开)。
+    void addSavedConnection(const ConnData &c);
+    // 当前所有连接配置(用于持久化)。
+    QList<ConnData> allConnections() const;
 
     // 当前选中项相关的上下文(无则返回空串)。
     QString currentConnId() const;

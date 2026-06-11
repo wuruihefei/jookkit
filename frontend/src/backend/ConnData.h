@@ -16,6 +16,10 @@ public:
     QString file;       // sqlite
 
     QJsonObject toOpenRequest() const;
+    QJsonObject toTestRequest() const;
+
+private:
+    QJsonObject toRequest(int funcId) const;
 };
 
 #endif

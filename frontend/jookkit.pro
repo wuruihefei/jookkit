@@ -10,6 +10,8 @@ SOURCES += \
     src/main.cpp \
     src/ui/MinimalWindow.cpp \
     src/ui/SqlEditor.cpp \
+    src/ui/ConnDialog.cpp \
+    src/ui/ObjectTree.cpp \
     src/sql/SqlSplitter.cpp \
     src/sql/SqlHighlighter.cpp \
     src/backend/ConnData.cpp \
@@ -19,6 +21,8 @@ SOURCES += \
 HEADERS += \
     src/ui/MinimalWindow.h \
     src/ui/SqlEditor.h \
+    src/ui/ConnDialog.h \
+    src/ui/ObjectTree.h \
     src/sql/SqlSplitter.h \
     src/sql/SqlHighlighter.h \
     src/backend/ConnData.h \

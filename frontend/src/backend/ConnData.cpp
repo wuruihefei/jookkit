@@ -1,9 +1,9 @@
 #include "backend/ConnData.h"
 #include "backend/FuncId.h"
 
-QJsonObject ConnData::toOpenRequest() const {
+QJsonObject ConnData::toRequest(int funcId) const {
     QJsonObject o;
-    o.insert("funcId", FuncId::OPEN_CONNECTION);
+    o.insert("funcId", funcId);
     o.insert("connId", connId);
     o.insert("type", type);
     if (type == "sqlite") {
@@ -16,4 +16,12 @@ QJsonObject ConnData::toOpenRequest() const {
         o.insert("database", database);
     }
     return o;
+}
+
+QJsonObject ConnData::toOpenRequest() const {
+    return toRequest(FuncId::OPEN_CONNECTION);
+}
+
+QJsonObject ConnData::toTestRequest() const {
+    return toRequest(FuncId::TEST_CONNECTION);
 }

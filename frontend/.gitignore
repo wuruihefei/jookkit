@@ -10,3 +10,6 @@ ui_*.h
 jookkit
 tst_jookkit
 tst_integration
+dist-win/
+docker/ca-certificates.crt
+target_wrapper.sh

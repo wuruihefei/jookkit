@@ -1,0 +1,23 @@
+# 在 Linux 上交叉编译 JookKit 的 Windows(x64)版本。
+# 基于 Ubuntu 20.04(focal)+ MXE 预编译 MinGW-Qt5.15。
+FROM artifacts.iflytek.com/docker-repo/library/ubuntu:20.04
+
+ARG http_proxy
+ARG https_proxy
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 精简镜像缺 ca-certificates,导致经代理的 TLS 全部失败;先放入宿主 CA 包。
+COPY ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+
+# HTTP 经代理时 InRelease 会被篡改(NOSPLIT),改用 https 走 CONNECT 透传。
+RUN sed -i 's|http://archive.ubuntu.com|https://archive.ubuntu.com|g; s|http://security.ubuntu.com|https://security.ubuntu.com|g' /etc/apt/sources.list \
+ && apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates gnupg make perl xz-utils zip \
+ && echo "deb [trusted=yes] https://pkg.mxe.cc/repos/apt focal main" \
+        > /etc/apt/sources.list.d/mxeapt.list \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends mxe-x86-64-w64-mingw32.shared-qtbase \
+ && rm -rf /var/lib/apt/lists/*
+
+ENV PATH="/usr/lib/mxe/usr/bin:${PATH}"
+WORKDIR /work

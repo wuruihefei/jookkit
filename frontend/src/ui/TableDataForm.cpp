@@ -18,8 +18,8 @@ TableDataForm::TableDataForm(BackendClient *client, const QString &connId,
                              const QString &db, const QString &table, QWidget *parent)
     : QWidget(parent), client_(client), connId_(connId), db_(db), table_(table) {
 
-    pageSize_ = QSettings().value("data/pageSize", 200).toInt();
-    if (pageSize_ <= 0) pageSize_ = 200;
+    pageSize_ = QSettings().value("data/pageSize", 20).toInt();
+    if (pageSize_ <= 0) pageSize_ = 20;
 
     auto *toolbar = new QToolBar;
     toolbar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
@@ -35,9 +35,9 @@ TableDataForm::TableDataForm(BackendClient *client, const QString &connId,
     toolbar->addSeparator();
     toolbar->addWidget(new QLabel(tr(" 每页 ")));
     auto *sizeCombo = new QComboBox;
-    sizeCombo->addItems({"100", "200", "500", "1000"});
+    sizeCombo->addItems({"20", "100", "200", "500", "1000"});
     int defIdx = sizeCombo->findText(QString::number(pageSize_));
-    sizeCombo->setCurrentIndex(defIdx >= 0 ? defIdx : 1);
+    sizeCombo->setCurrentIndex(defIdx >= 0 ? defIdx : 0);
     connect(sizeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &TableDataForm::changePageSize);
     toolbar->addWidget(sizeCombo);
@@ -57,8 +57,8 @@ TableDataForm::TableDataForm(BackendClient *client, const QString &connId,
 }
 
 void TableDataForm::changePageSize(int idx) {
-    const int sizes[] = {100, 200, 500, 1000};
-    if (idx >= 0 && idx < 4) {
+    const int sizes[] = {20, 100, 200, 500, 1000};
+    if (idx >= 0 && idx < 5) {
         pageSize_ = sizes[idx];
         page_ = 0;
         reload();

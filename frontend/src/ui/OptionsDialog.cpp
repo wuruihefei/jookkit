@@ -13,10 +13,10 @@ OptionsDialog::OptionsDialog(QWidget *parent) : QDialog(parent) {
     QSettings s;
 
     pageSize_ = new QComboBox;
-    pageSize_->addItems({"100", "200", "500", "1000"});
-    int ps = s.value("data/pageSize", 200).toInt();
+    pageSize_->addItems({"20", "100", "200", "500", "1000"});
+    int ps = s.value("data/pageSize", 20).toInt();
     int idx = pageSize_->findText(QString::number(ps));
-    pageSize_->setCurrentIndex(idx >= 0 ? idx : 1);
+    pageSize_->setCurrentIndex(idx >= 0 ? idx : 0);
 
     fontSize_ = new QSpinBox;
     fontSize_->setRange(8, 24);

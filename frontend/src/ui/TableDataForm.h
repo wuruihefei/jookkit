@@ -52,7 +52,7 @@ private:
     QSet<int> newRows_;
 
     int page_ = 0;        // 0-based 页码
-    int pageSize_ = 200;  // 每页条数
+    int pageSize_ = 20;   // 每页条数
 };
 
 #endif

@@ -31,19 +31,11 @@ ContentWidget::ContentWidget(BackendClient *client, QWidget *parent)
     connect(tree_, &ObjectTree::structureRequested, this, &ContentWidget::openTableStructure);
     connect(tree_, &QTreeWidget::currentItemChanged, this, &ContentWidget::updateInfo);
 
-    // 左:对象工具栏 + 对象树
-    auto *objBar = new QToolBar;
-    objBar->setObjectName("objectToolBar");
-    objBar->setIconSize(QSize(18, 18));
-    objBar->addAction(Icons::data(), tr("打开数据"), this, &ContentWidget::viewCurrentData);
-    objBar->addAction(Icons::structure(), tr("查看结构"), this, &ContentWidget::viewCurrentStructure);
-    objBar->addAction(Icons::query(), tr("新建查询"), this, &ContentWidget::newQuery);
-
+    // 左:对象树(对象操作已在顶部工具栏与右键菜单,故不再重复加小工具栏)
     leftPanel_ = new QWidget;
     auto *lv = new QVBoxLayout(leftPanel_);
     lv->setContentsMargins(0, 0, 0, 0);
     lv->setSpacing(0);
-    lv->addWidget(objBar);
     lv->addWidget(tree_, 1);
 
     // 右:标签页 + 信息窗格

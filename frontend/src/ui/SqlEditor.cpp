@@ -62,18 +62,23 @@ void SqlEditor::setCompletionWords(const QStringList &words) {
     completer_->setModel(new QStringListModel(all, completer_));
 }
 
+// 取光标左侧的标识符前缀(含字母/数字/下划线),避免被 '_' 截断。
 QString SqlEditor::textUnderCursor() const {
-    QTextCursor tc = textCursor();
-    tc.select(QTextCursor::WordUnderCursor);
-    return tc.selectedText();
+    const QTextCursor tc = textCursor();
+    const int pos = tc.positionInBlock();
+    const QString line = tc.block().text();
+    int start = pos;
+    auto isIdent = [](QChar c) { return c.isLetterOrNumber() || c == QLatin1Char('_'); };
+    while (start > 0 && isIdent(line.at(start - 1))) --start;
+    return line.mid(start, pos - start);
 }
 
 void SqlEditor::insertCompletion(const QString &completion) {
     QTextCursor tc = textCursor();
-    int extra = completion.length() - completer_->completionPrefix().length();
-    tc.movePosition(QTextCursor::Left);
-    tc.movePosition(QTextCursor::EndOfWord);
-    tc.insertText(completion.right(extra));
+    const int n = completer_->completionPrefix().length();
+    tc.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor, n);  // 选中已输入的前缀
+    tc.removeSelectedText();
+    tc.insertText(completion);                                      // 整段替换
     setTextCursor(tc);
 }
 

@@ -12,6 +12,7 @@ SOURCES += \
     src/ui/SqlEditor.cpp \
     src/ui/ConnDialog.cpp \
     src/ui/ObjectTree.cpp \
+    src/ui/QueryForm.cpp \
     src/sql/SqlSplitter.cpp \
     src/sql/SqlHighlighter.cpp \
     src/backend/ConnData.cpp \
@@ -23,6 +24,7 @@ HEADERS += \
     src/ui/SqlEditor.h \
     src/ui/ConnDialog.h \
     src/ui/ObjectTree.h \
+    src/ui/QueryForm.h \
     src/sql/SqlSplitter.h \
     src/sql/SqlHighlighter.h \
     src/backend/ConnData.h \

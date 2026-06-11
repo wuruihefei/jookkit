@@ -133,7 +133,11 @@ void ContentWidget::openTableData(const QString &connId, const QString &db, cons
 }
 
 void ContentWidget::openTableStructure(const QString &connId, const QString &db, const QString &table) {
-    addTab(new TableStructureForm(client_, connId, db, table), tr("结构: %1").arg(table));
+    QString dbType;
+    for (const ConnData &c : tree_->allConnections())
+        if (c.connId == connId) { dbType = c.type; break; }
+    addTab(new TableStructureForm(client_, connId, db, table, dbType),
+           tr("结构: %1").arg(table));
 }
 
 void ContentWidget::viewCurrentData() {

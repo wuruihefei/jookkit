@@ -19,6 +19,7 @@ public:
 private:
     BackendClient *client_;
     QTableWidget *general_;
+    QTableWidget *indexes_;
     QPlainTextEdit *ddl_;
 };
 

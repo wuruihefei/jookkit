@@ -80,6 +80,13 @@ bool ContentWidget::addConnection(const ConnData &c) { return tree_->addConnecti
 void ContentWidget::addSavedConnection(const ConnData &c) { tree_->addSavedConnection(c); }
 QList<ConnData> ContentWidget::allConnections() const { return tree_->allConnections(); }
 
+ConnData ContentWidget::currentConnData() const {
+    QString id = tree_->currentConnId();
+    for (const ConnData &c : tree_->allConnections())
+        if (c.connId == id) return c;
+    return ConnData();
+}
+
 QueryForm *ContentWidget::currentQueryForm() const {
     return qobject_cast<QueryForm *>(tabs_->currentWidget());
 }

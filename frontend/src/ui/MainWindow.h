@@ -24,6 +24,7 @@ private slots:
     void executeSqlFile();
     void openOptions();
     void openFindReplace();
+    void openUserManager();
     void about();
 
 private:

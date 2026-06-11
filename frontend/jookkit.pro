@@ -23,6 +23,7 @@ SOURCES += \
     src/ui/Icons.cpp \
     src/ui/OptionsDialog.cpp \
     src/ui/FindReplaceDialog.cpp \
+    src/ui/UserManagerDialog.cpp \
     src/ui/SqlEditor.cpp \
     src/sql/SqlSplitter.cpp \
     src/sql/SqlHighlighter.cpp \
@@ -44,6 +45,7 @@ HEADERS += \
     src/ui/Icons.h \
     src/ui/OptionsDialog.h \
     src/ui/FindReplaceDialog.h \
+    src/ui/UserManagerDialog.h \
     src/ui/SqlEditor.h \
     src/sql/SqlSplitter.h \
     src/sql/SqlHighlighter.h \

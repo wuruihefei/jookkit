@@ -19,6 +19,8 @@ public final class Dispatcher {
         handlers.put(FuncId.LIST_TABLES, new MetadataHandlers.ListTables(registry));
         handlers.put(FuncId.DESCRIBE_TABLE, new MetadataHandlers.DescribeTable(registry));
         handlers.put(FuncId.GET_DDL, new MetadataHandlers.GetDdl(registry));
+        handlers.put(FuncId.GET_SCHEMA, new MetadataHandlers.GetSchema(registry));
+        handlers.put(FuncId.LIST_USERS, new MetadataHandlers.ListUsers(registry));
         handlers.put(FuncId.EXEC_SQL, new ExecSqlHandler(registry));
         handlers.put(FuncId.INSERT_ROW, new DataEditHandlers.Insert(registry));
         handlers.put(FuncId.UPDATE_ROW, new DataEditHandlers.Update(registry));

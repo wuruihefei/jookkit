@@ -6,6 +6,7 @@
 #include "ui/Icons.h"
 #include "ui/OptionsDialog.h"
 #include "ui/FindReplaceDialog.h"
+#include "ui/UserManagerDialog.h"
 #include "store/ConnectionStore.h"
 #include "backend/BackendProcess.h"
 #include "backend/BackendClient.h"
@@ -134,7 +135,7 @@ void MainWindow::buildMenus() {
     disabled(toolMenu, tr("结构同步..."));
     toolMenu->addSeparator();
     toolMenu->addAction(tr("执行 SQL 文件..."), this, &MainWindow::executeSqlFile);
-    disabled(toolMenu, tr("用户管理..."));
+    toolMenu->addAction(tr("用户管理..."), this, &MainWindow::openUserManager);
     toolMenu->addSeparator();
     toolMenu->addAction(tr("选项..."), this, &MainWindow::openOptions);
 
@@ -183,6 +184,20 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 
 void MainWindow::openOptions() {
     OptionsDialog(this).exec();
+}
+
+void MainWindow::openUserManager() {
+    ConnData c = content_->currentConnData();
+    if (c.connId.isEmpty()) {
+        QMessageBox::information(this, tr("用户管理"), tr("请先在左侧选择一个连接"));
+        return;
+    }
+    if (c.type != "mysql") {
+        QMessageBox::information(this, tr("用户管理"), tr("仅 MySQL 连接支持用户管理"));
+        return;
+    }
+    UserManagerDialog dlg(client_, c.connId, this);
+    dlg.exec();
 }
 
 void MainWindow::openFindReplace() {

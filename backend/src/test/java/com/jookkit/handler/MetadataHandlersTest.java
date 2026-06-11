@@ -61,6 +61,38 @@ class MetadataHandlersTest {
     }
 
     @Test
+    void getSchemaReturnsColumnsPkAndIndexes() {
+        new ConnectionHandlers.Open(reg).handle(openSqlite("c4"));
+        ExecSqlHandler exec = new ExecSqlHandler(reg);
+        JsonObject ddl = new JsonObject();
+        ddl.addProperty("connId", "c4");
+        ddl.addProperty("sql", "create table acct(id integer primary key, email text)");
+        exec.handle(ddl);
+        JsonObject idx = new JsonObject();
+        idx.addProperty("connId", "c4");
+        idx.addProperty("sql", "create unique index ux_email on acct(email)");
+        exec.handle(idx);
+
+        JsonObject q = new JsonObject();
+        q.addProperty("connId", "c4");
+        q.addProperty("table", "acct");
+        JsonObject d = new MetadataHandlers.GetSchema(reg).handle(q);
+        assertEquals(2, d.getAsJsonArray("columns").size());
+        assertTrue(d.getAsJsonArray("primaryKeys").toString().contains("id"));
+        assertTrue(d.getAsJsonArray("indexes").toString().contains("ux_email"));
+    }
+
+    @Test
+    void listUsersUnsupportedForSqlite() {
+        new ConnectionHandlers.Open(reg).handle(openSqlite("c5"));
+        JsonObject q = new JsonObject();
+        q.addProperty("connId", "c5");
+        JsonObject d = new MetadataHandlers.ListUsers(reg).handle(q);
+        assertFalse(d.get("supported").getAsBoolean());
+        assertEquals(0, d.getAsJsonArray("users").size());
+    }
+
+    @Test
     void listDatabasesReturnsMainForSqlite() {
         ConnectionHandlers.Open open = new ConnectionHandlers.Open(reg);
         open.handle(openSqlite("c2"));

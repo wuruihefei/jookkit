@@ -23,6 +23,7 @@ public:
     bool addConnection(const ConnData &c);
     void addSavedConnection(const ConnData &c);
     QList<ConnData> allConnections() const;
+    ConnData currentConnData() const;   // 当前选中连接的配置(无则 connId 为空)
     ObjectTree *tree() const { return tree_; }
     QueryForm *currentQueryForm() const;
 

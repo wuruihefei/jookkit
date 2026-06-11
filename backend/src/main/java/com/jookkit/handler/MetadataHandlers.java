@@ -61,6 +61,112 @@ public final class MetadataHandlers {
         }
     }
 
+    /** 结构化读取表 schema:列(含默认值/主键标记)+ 主键 + 索引。 */
+    public static final class GetSchema implements Handler {
+        private final ConnectionRegistry registry;
+        public GetSchema(ConnectionRegistry registry) { this.registry = registry; }
+
+        @Override
+        public JsonObject handle(JsonObject req) {
+            Connection c = registry.get(req.get("connId").getAsString());
+            String table = req.get("table").getAsString();
+            try {
+                String catalog = (!isSqlite(c) && req.has("db")) ? req.get("db").getAsString() : null;
+                DatabaseMetaData md = c.getMetaData();
+
+                java.util.Set<String> pkSet = new java.util.LinkedHashSet<>();
+                try (ResultSet rs = md.getPrimaryKeys(catalog, null, table)) {
+                    while (rs.next()) pkSet.add(rs.getString("COLUMN_NAME"));
+                }
+
+                JsonArray cols = new JsonArray();
+                try (ResultSet rs = md.getColumns(catalog, null, table, null)) {
+                    while (rs.next()) {
+                        JsonObject col = new JsonObject();
+                        String name = rs.getString("COLUMN_NAME");
+                        col.addProperty("name", name);
+                        col.addProperty("type", rs.getString("TYPE_NAME"));
+                        col.addProperty("nullable",
+                                rs.getInt("NULLABLE") == DatabaseMetaData.columnNullable);
+                        col.addProperty("defaultValue", rs.getString("COLUMN_DEF"));
+                        col.addProperty("pk", pkSet.contains(name));
+                        cols.add(col);
+                    }
+                }
+
+                JsonArray pks = new JsonArray();
+                for (String p : pkSet) pks.add(p);
+
+                // 索引:按索引名分组,收集列
+                java.util.LinkedHashMap<String, JsonObject> idxMap = new java.util.LinkedHashMap<>();
+                java.util.LinkedHashMap<String, JsonArray> idxCols = new java.util.LinkedHashMap<>();
+                try (ResultSet rs = md.getIndexInfo(catalog, null, table, false, false)) {
+                    while (rs.next()) {
+                        String iname = rs.getString("INDEX_NAME");
+                        if (iname == null) continue;  // 统计行
+                        String colName = rs.getString("COLUMN_NAME");
+                        if (!idxMap.containsKey(iname)) {
+                            JsonObject idx = new JsonObject();
+                            idx.addProperty("name", iname);
+                            idx.addProperty("unique", !rs.getBoolean("NON_UNIQUE"));
+                            idxMap.put(iname, idx);
+                            idxCols.put(iname, new JsonArray());
+                        }
+                        if (colName != null) idxCols.get(iname).add(colName);
+                    }
+                }
+                JsonArray indexes = new JsonArray();
+                for (var e : idxMap.entrySet()) {
+                    e.getValue().add("columns", idxCols.get(e.getKey()));
+                    indexes.add(e.getValue());
+                }
+
+                JsonObject data = new JsonObject();
+                data.add("columns", cols);
+                data.add("primaryKeys", pks);
+                data.add("indexes", indexes);
+                return data;
+            } catch (SQLException e) {
+                throw new JookException("SQL_ERROR", e.getMessage(), e.getSQLState());
+            }
+        }
+    }
+
+    /** 列出数据库用户。仅 MySQL 支持;其它返回 supported=false。 */
+    public static final class ListUsers implements Handler {
+        private final ConnectionRegistry registry;
+        public ListUsers(ConnectionRegistry registry) { this.registry = registry; }
+
+        @Override
+        public JsonObject handle(JsonObject req) {
+            Connection c = registry.get(req.get("connId").getAsString());
+            JsonObject data = new JsonObject();
+            JsonArray users = new JsonArray();
+            try {
+                if (isSqlite(c)) {
+                    data.addProperty("supported", false);
+                    data.add("users", users);
+                    return data;
+                }
+                try (var st = c.createStatement();
+                     ResultSet rs = st.executeQuery(
+                         "SELECT user, host FROM mysql.user ORDER BY user, host")) {
+                    while (rs.next()) {
+                        JsonObject u = new JsonObject();
+                        u.addProperty("user", rs.getString(1));
+                        u.addProperty("host", rs.getString(2));
+                        users.add(u);
+                    }
+                }
+                data.addProperty("supported", true);
+                data.add("users", users);
+                return data;
+            } catch (SQLException e) {
+                throw new JookException("SQL_ERROR", e.getMessage(), e.getSQLState());
+            }
+        }
+    }
+
     public static final class GetDdl implements Handler {
         private final ConnectionRegistry registry;
         public GetDdl(ConnectionRegistry registry) { this.registry = registry; }

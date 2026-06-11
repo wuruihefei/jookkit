@@ -32,6 +32,16 @@ private slots:
         QCOMPARE(req.value("user").toString(), QString("root"));
         QCOMPARE(req.value("database").toString(), QString("test"));
     }
+
+    void testRequestUsesTestFuncId() {
+        ConnData c;
+        c.connId = "c1";
+        c.type = "sqlite";
+        c.file = "/tmp/x.db";
+        QJsonObject req = c.toTestRequest();
+        QCOMPARE(req.value("funcId").toInt(), FuncId::TEST_CONNECTION);
+        QCOMPARE(req.value("file").toString(), QString("/tmp/x.db"));
+    }
 };
 
 QTEST_MAIN(TstConnData)

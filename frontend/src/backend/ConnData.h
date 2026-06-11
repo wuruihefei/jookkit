@@ -14,6 +14,7 @@ public:
     QString password;
     QString database;
     QString file;       // sqlite
+    QString params;     // mysql 可选附加参数
 
     QJsonObject toOpenRequest() const;
     QJsonObject toTestRequest() const;

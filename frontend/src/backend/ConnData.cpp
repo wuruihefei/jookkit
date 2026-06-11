@@ -14,6 +14,7 @@ QJsonObject ConnData::toRequest(int funcId) const {
         o.insert("user", user);
         o.insert("password", password);
         o.insert("database", database);
+        if (!params.isEmpty()) o.insert("params", params);
     }
     return o;
 }

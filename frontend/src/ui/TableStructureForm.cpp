@@ -64,24 +64,36 @@ TableStructureForm::TableStructureForm(BackendClient *client, const QString &con
 }
 
 QStringList TableStructureForm::typeOptions() const {
-    if (isSqlite())
-        return {"INTEGER", "TEXT", "REAL", "NUMERIC", "BLOB"};
-    return {"INT", "BIGINT", "SMALLINT", "TINYINT", "DECIMAL(10,2)", "FLOAT", "DOUBLE",
-            "VARCHAR(255)", "CHAR(36)", "TEXT", "MEDIUMTEXT", "LONGTEXT",
-            "DATE", "DATETIME", "TIMESTAMP", "TIME", "YEAR",
-            "JSON", "BLOB", "LONGBLOB", "BOOLEAN"};
+    if (isSqlite())  // SQLite 接受别名声明,按规则映射到五种亲和性
+        return {"INTEGER", "INT", "TINYINT", "SMALLINT", "BIGINT",
+                "REAL", "FLOAT", "DOUBLE", "NUMERIC", "DECIMAL(10,2)",
+                "TEXT", "VARCHAR(255)", "CHAR(36)", "CLOB",
+                "BLOB", "BOOLEAN", "DATE", "DATETIME"};
+    return {"TINYINT", "SMALLINT", "MEDIUMINT", "INT", "BIGINT",
+            "DECIMAL(10,2)", "FLOAT", "DOUBLE", "BIT(1)",
+            "CHAR(36)", "VARCHAR(255)", "TINYTEXT", "TEXT", "MEDIUMTEXT", "LONGTEXT",
+            "BINARY(16)", "VARBINARY(255)", "TINYBLOB", "BLOB", "MEDIUMBLOB", "LONGBLOB",
+            "DATE", "TIME", "DATETIME", "TIMESTAMP", "YEAR",
+            "BOOLEAN", "JSON", "ENUM('a','b')", "SET('a','b')",
+            "GEOMETRY", "POINT", "LINESTRING", "POLYGON",
+            "MULTIPOINT", "MULTILINESTRING", "MULTIPOLYGON", "GEOMETRYCOLLECTION"};
 }
 
 QStringList TableStructureForm::allowedBaseTypes() const {
     if (isSqlite())
-        return {"INTEGER", "INT", "TEXT", "REAL", "NUMERIC", "BLOB"};
+        return {"INTEGER", "INT", "TINYINT", "SMALLINT", "MEDIUMINT", "BIGINT",
+                "REAL", "FLOAT", "DOUBLE", "NUMERIC", "DECIMAL",
+                "TEXT", "VARCHAR", "NVARCHAR", "CHAR", "NCHAR", "CLOB",
+                "BLOB", "BOOLEAN", "BOOL", "DATE", "DATETIME"};
     return {"INT", "INTEGER", "BIGINT", "SMALLINT", "TINYINT", "MEDIUMINT",
-            "DECIMAL", "NUMERIC", "FLOAT", "DOUBLE", "BIT",
+            "DECIMAL", "NUMERIC", "FLOAT", "DOUBLE", "REAL", "BIT",
             "VARCHAR", "CHAR", "BINARY", "VARBINARY",
             "TEXT", "TINYTEXT", "MEDIUMTEXT", "LONGTEXT",
             "DATE", "DATETIME", "TIMESTAMP", "TIME", "YEAR",
             "JSON", "BLOB", "TINYBLOB", "MEDIUMBLOB", "LONGBLOB",
-            "BOOLEAN", "BOOL", "ENUM", "SET"};
+            "BOOLEAN", "BOOL", "ENUM", "SET",
+            "GEOMETRY", "POINT", "LINESTRING", "POLYGON",
+            "MULTIPOINT", "MULTILINESTRING", "MULTIPOLYGON", "GEOMETRYCOLLECTION"};
 }
 
 QString TableStructureForm::quoteIdent(const QString &id) const {
@@ -209,7 +221,7 @@ void TableStructureForm::addField() {
     int row = grid_->rowCount();
     grid_->setRowCount(row + 1);
     RowData rd;
-    rd.type = typeOptions().first();
+    rd.type = isSqlite() ? "INTEGER" : "INT";
     setRow(row, rd);
     grid_->setCurrentCell(row, kColName);
     grid_->editItem(grid_->item(row, kColName));

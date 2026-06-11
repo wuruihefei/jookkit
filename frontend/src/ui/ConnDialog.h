@@ -37,6 +37,7 @@ private:
     QLineEdit *userEdit_;
     QLineEdit *pwdEdit_;
     QLineEdit *dbEdit_;
+    QLineEdit *paramsEdit_;
 };
 
 #endif

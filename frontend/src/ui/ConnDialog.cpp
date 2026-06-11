@@ -39,12 +39,15 @@ ConnDialog::ConnDialog(BackendClient *client, QWidget *parent)
     userEdit_ = new QLineEdit("root");
     pwdEdit_ = new QLineEdit; pwdEdit_->setEchoMode(QLineEdit::Password);
     dbEdit_ = new QLineEdit;
+    paramsEdit_ = new QLineEdit("useSSL=false&allowPublicKeyRetrieval=true");
+    paramsEdit_->setToolTip(tr("JDBC 附加参数,如 serverTimezone=GMT%2B8&characterEncoding=utf8"));
     auto *mysqlForm = new QFormLayout(mysqlPage);
     mysqlForm->addRow(tr("主机:"), hostEdit_);
     mysqlForm->addRow(tr("端口:"), portSpin_);
     mysqlForm->addRow(tr("用户:"), userEdit_);
     mysqlForm->addRow(tr("密码:"), pwdEdit_);
     mysqlForm->addRow(tr("数据库:"), dbEdit_);
+    mysqlForm->addRow(tr("参数:"), paramsEdit_);
 
     stack_ = new QStackedWidget;
     stack_->addWidget(sqlitePage);
@@ -95,6 +98,7 @@ ConnData ConnDialog::build() const {
         c.user = userEdit_->text();
         c.password = pwdEdit_->text();
         c.database = dbEdit_->text().trimmed();
+        c.params = paramsEdit_->text().trimmed();
     }
     return c;
 }

@@ -20,6 +20,9 @@ static QString resolveJava() {
 BackendProcess::BackendProcess(const QString &jarPath, QObject *parent)
     : QObject(parent), jarPath_(jarPath), proc_(new QProcess(this)) {
     proc_->setProcessChannelMode(QProcess::MergedChannels);
+    // 任何退出路径(关窗/quit/信号)都会触发 aboutToQuit,此时对象仍存活,
+    // 在这里停后端最可靠,避免依赖析构时序导致后端被遗留。
+    connect(qApp, &QCoreApplication::aboutToQuit, this, &BackendProcess::stop);
 }
 
 BackendProcess::~BackendProcess() { stop(); }
@@ -48,8 +51,12 @@ bool BackendProcess::start(int handshakeTimeoutMs) {
 
 void BackendProcess::stop() {
     if (proc_->state() != QProcess::NotRunning) {
+        // 后端是无窗口 Java 进程,terminate 在 Windows 上多半无效,直接 kill 更可靠
         proc_->terminate();
-        if (!proc_->waitForFinished(3000)) proc_->kill();
+        if (!proc_->waitForFinished(800)) {
+            proc_->kill();
+            proc_->waitForFinished(2000);
+        }
     }
 }
 

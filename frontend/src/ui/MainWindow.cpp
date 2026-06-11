@@ -177,6 +177,9 @@ void MainWindow::newConnection() {
 void MainWindow::closeEvent(QCloseEvent *event) {
     // 关闭时再保存一次,确保任何连接变更落盘
     if (content_) ConnectionStore::save(content_->allConnections());
+    // 立即停掉后端子进程(在事件循环仍在时执行,可靠等待/强杀),避免遗留进程
+    if (proc_) proc_->stop();
+    event->accept();
     QMainWindow::closeEvent(event);
 }
 

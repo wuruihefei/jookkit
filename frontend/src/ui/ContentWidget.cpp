@@ -92,12 +92,14 @@ void ContentWidget::addTab(QWidget *w, const QString &title) {
 }
 
 void ContentWidget::newQuery() {
-    QString connId = tree_->currentConnId();
-    if (connId.isEmpty()) {
-        QMessageBox::information(this, tr("提示"), tr("请先在左侧选择一个连接"));
+    QList<ConnData> conns = tree_->allConnections();
+    if (conns.isEmpty()) {
+        QMessageBox::information(this, tr("提示"), tr("请先新建一个连接"));
         return;
     }
-    addTab(new QueryForm(client_, connId, tree_->currentDb()), tr("查询 [%1]").arg(connId));
+    QString connId = tree_->currentConnId();
+    if (connId.isEmpty()) connId = conns.first().connId;
+    addTab(new QueryForm(client_, conns, connId, tree_->currentDb()), tr("查询"));
 }
 
 void ContentWidget::openTableData(const QString &connId, const QString &db, const QString &table) {

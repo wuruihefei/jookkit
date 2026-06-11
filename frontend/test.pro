@@ -6,4 +6,9 @@ TARGET = tst_jookkit
 INCLUDEPATH += src
 
 SOURCES += \
-    tests/tst_smoke.cpp
+    tests/tst_conndata.cpp \
+    src/backend/ConnData.cpp
+
+HEADERS += \
+    src/backend/ConnData.h \
+    src/backend/FuncId.h

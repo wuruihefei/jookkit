@@ -128,12 +128,8 @@ void MainWindow::buildMenus() {
     disabled(favMenu, tr("收藏当前"));
     disabled(favMenu, tr("管理收藏..."));
 
-    // 工具
+    // 工具(数据传输/数据同步/结构同步等未实现功能暂不展示)
     QMenu *toolMenu = menuBar()->addMenu(tr("工具(&T)"));
-    disabled(toolMenu, tr("数据传输..."));
-    disabled(toolMenu, tr("数据同步..."));
-    disabled(toolMenu, tr("结构同步..."));
-    toolMenu->addSeparator();
     toolMenu->addAction(tr("执行 SQL 文件..."), this, &MainWindow::executeSqlFile);
     toolMenu->addAction(tr("用户管理..."), this, &MainWindow::openUserManager);
     toolMenu->addSeparator();

@@ -1,0 +1,12 @@
+# qmake / build artifacts
+Makefile
+.qmake.stash
+moc_predefs.h
+moc_*.cpp
+*.moc
+*.o
+ui_*.h
+# binaries
+jookkit
+tst_jookkit
+tst_integration

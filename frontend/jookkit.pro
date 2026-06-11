@@ -6,6 +6,8 @@ TEMPLATE = app
 
 INCLUDEPATH += src
 
+RESOURCES += resources.qrc
+
 SOURCES += \
     src/main.cpp \
     src/ui/MainWindow.cpp \

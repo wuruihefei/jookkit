@@ -30,10 +30,12 @@ public:
 
 signals:
     void tableActivated(const QString &connId, const QString &db, const QString &table);
+    void structureRequested(const QString &connId, const QString &db, const QString &table);
 
 private slots:
     void onItemExpanded(QTreeWidgetItem *item);
     void onItemDoubleClicked(QTreeWidgetItem *item, int column);
+    void showContextMenu(const QPoint &pos);
 
 private:
     void loadDatabases(QTreeWidgetItem *connItem, const QString &connId);

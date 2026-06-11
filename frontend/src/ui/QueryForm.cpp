@@ -14,6 +14,10 @@
 #include <QJsonArray>
 #include <QShortcut>
 #include <QKeySequence>
+#include <QFileDialog>
+#include <QTextStream>
+#include <QFile>
+#include <QTextCursor>
 
 QueryForm::QueryForm(BackendClient *client, const QString &connId,
                      const QString &db, QWidget *parent)
@@ -21,6 +25,7 @@ QueryForm::QueryForm(BackendClient *client, const QString &connId,
 
     auto *toolbar = new QToolBar;
     toolbar->addAction(tr("运行 (Ctrl+Enter)"), this, &QueryForm::run);
+    toolbar->addAction(tr("运行选中"), this, &QueryForm::runCurrent);
 
     editor_ = new SqlEditor;
     grid_ = new QTableWidget;
@@ -48,8 +53,31 @@ void QueryForm::setSql(const QString &sql) {
 }
 
 void QueryForm::run() {
+    runText(editor_->toPlainText());
+}
+
+void QueryForm::runCurrent() {
+    QString sel = editor_->textCursor().selectedText();
+    // QTextCursor 用 U+2029 作段分隔,换回换行
+    sel.replace(QChar(0x2029), '\n');
+    runText(sel.trimmed().isEmpty() ? editor_->toPlainText() : sel);
+}
+
+void QueryForm::saveSql() {
+    QString f = QFileDialog::getSaveFileName(this, tr("保存 SQL"), "query.sql",
+                                             tr("SQL 文件 (*.sql);;所有文件 (*)"));
+    if (f.isEmpty()) return;
+    QFile file(f);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream(&file) << editor_->toPlainText();
+        file.close();
+        status_->setText(tr("已保存到 %1").arg(f));
+    }
+}
+
+void QueryForm::runText(const QString &text) {
     if (!client_) return;
-    const QStringList stmts = SqlSplitter::split(editor_->toPlainText());
+    const QStringList stmts = SqlSplitter::split(text);
     if (stmts.isEmpty()) { status_->setText(tr("没有可执行的语句")); return; }
 
     int totalAffected = 0;

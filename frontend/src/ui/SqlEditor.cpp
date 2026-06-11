@@ -73,6 +73,39 @@ void SqlEditor::highlightCurrentLine() {
     setExtraSelections(extraSelections);
 }
 
+void SqlEditor::toggleComment() {
+    QTextCursor cur = textCursor();
+    int startBlock = document()->findBlock(cur.selectionStart()).blockNumber();
+    int endBlock = document()->findBlock(cur.selectionEnd()).blockNumber();
+
+    bool allCommented = true;
+    for (int i = startBlock; i <= endBlock; ++i) {
+        QTextBlock b = document()->findBlockByNumber(i);
+        if (!b.text().trimmed().startsWith("--")) { allCommented = false; break; }
+    }
+
+    QTextCursor edit(document());
+    edit.beginEditBlock();
+    for (int i = startBlock; i <= endBlock; ++i) {
+        QTextBlock b = document()->findBlockByNumber(i);
+        if (!b.isValid()) continue;
+        if (allCommented) {
+            const QString t = b.text();
+            int idx = t.indexOf("--");
+            if (idx >= 0) {
+                int len = (idx + 2 < t.size() && t.at(idx + 2) == ' ') ? 3 : 2;
+                edit.setPosition(b.position() + idx);
+                edit.setPosition(b.position() + idx + len, QTextCursor::KeepAnchor);
+                edit.removeSelectedText();
+            }
+        } else {
+            edit.setPosition(b.position());
+            edit.insertText("-- ");
+        }
+    }
+    edit.endEditBlock();
+}
+
 void SqlEditor::lineNumberAreaPaintEvent(QPaintEvent *event) {
     QPainter painter(lineNumberArea_);
     painter.fillRect(event->rect(), QColor(240, 240, 240));

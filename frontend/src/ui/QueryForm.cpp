@@ -1,6 +1,7 @@
 #include "ui/QueryForm.h"
 #include "ui/SqlEditor.h"
 #include "sql/SqlSplitter.h"
+#include "sql/SqlFormat.h"
 #include "backend/BackendClient.h"
 #include "backend/FuncId.h"
 
@@ -26,8 +27,23 @@ QueryForm::QueryForm(BackendClient *client, const QString &connId,
     auto *toolbar = new QToolBar;
     toolbar->addAction(tr("运行 (Ctrl+Enter)"), this, &QueryForm::run);
     toolbar->addAction(tr("运行选中"), this, &QueryForm::runCurrent);
+    toolbar->addAction(tr("格式化"), this, &QueryForm::formatSql);
 
     editor_ = new SqlEditor;
+
+    // 自动补全:加入当前库的表名
+    if (client_ && !db_.isEmpty()) {
+        QJsonObject req;
+        req.insert("funcId", FuncId::LIST_TABLES);
+        req.insert("connId", connId_);
+        req.insert("db", db_);
+        auto r = client_->call(req);
+        if (r.ok) {
+            QStringList tables;
+            for (const auto &t : r.data.value("tables").toArray()) tables << t.toString();
+            editor_->setCompletionWords(tables);
+        }
+    }
     grid_ = new QTableWidget;
     grid_->horizontalHeader()->setStretchLastSection(true);
     status_ = new QLabel(tr("就绪"));
@@ -50,6 +66,10 @@ QueryForm::QueryForm(BackendClient *client, const QString &connId,
 
 void QueryForm::setSql(const QString &sql) {
     editor_->setPlainText(sql);
+}
+
+void QueryForm::formatSql() {
+    editor_->setPlainText(SqlFormat::format(editor_->toPlainText()));
 }
 
 void QueryForm::run() {

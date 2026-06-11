@@ -24,6 +24,7 @@ public slots:
     void run();         // 运行全部语句
     void runCurrent();  // 运行选中文本(无选中则全部)
     void saveSql();     // 保存编辑器内容到 .sql 文件
+    void formatSql();   // 格式化 SQL
 
 private:
     void runText(const QString &sql);

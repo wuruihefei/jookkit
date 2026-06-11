@@ -66,6 +66,8 @@ ContentWidget::ContentWidget(BackendClient *client, QWidget *parent)
 }
 
 bool ContentWidget::addConnection(const ConnData &c) { return tree_->addConnection(c); }
+void ContentWidget::addSavedConnection(const ConnData &c) { tree_->addSavedConnection(c); }
+QList<ConnData> ContentWidget::allConnections() const { return tree_->allConnections(); }
 
 QueryForm *ContentWidget::currentQueryForm() const {
     return qobject_cast<QueryForm *>(tabs_->currentWidget());

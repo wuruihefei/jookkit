@@ -4,6 +4,9 @@
 #include "ui/QueryForm.h"
 #include "ui/SqlEditor.h"
 #include "ui/Icons.h"
+#include "ui/OptionsDialog.h"
+#include "ui/FindReplaceDialog.h"
+#include "store/ConnectionStore.h"
 #include "backend/BackendProcess.h"
 #include "backend/BackendClient.h"
 
@@ -44,6 +47,10 @@ MainWindow::MainWindow(const QString &jarPath, QWidget *parent)
     statusBar()->showMessage(proc_->isRunning()
         ? tr("后端已就绪 (端口 %1)").arg(proc_->port())
         : tr("后端未启动"));
+
+    // 加载已保存的连接(懒打开)
+    for (const ConnData &c : ConnectionStore::load())
+        content_->addSavedConnection(c);
 }
 
 void MainWindow::buildToolBar() {
@@ -98,7 +105,10 @@ void MainWindow::buildMenus() {
     editMenu->addAction(tr("行注释"), this, [=]{
         if (auto *e = qobject_cast<SqlEditor *>(QApplication::focusWidget())) e->toggleComment();
     }, QKeySequence(tr("Ctrl+/")));
-    disabled(editMenu, tr("查找替换..."));
+    editMenu->addAction(tr("格式化 SQL"), this, [this]{
+        if (auto *q = content_->currentQueryForm()) q->formatSql();
+    }, QKeySequence(tr("Ctrl+Shift+F")));
+    editMenu->addAction(tr("查找替换..."), this, &MainWindow::openFindReplace, QKeySequence::Find);
 
     // 视图
     QMenu *viewMenu = menuBar()->addMenu(tr("视图(&V)"));
@@ -127,7 +137,7 @@ void MainWindow::buildMenus() {
     toolMenu->addAction(tr("执行 SQL 文件..."), this, &MainWindow::executeSqlFile);
     disabled(toolMenu, tr("用户管理..."));
     toolMenu->addSeparator();
-    disabled(toolMenu, tr("选项..."));
+    toolMenu->addAction(tr("选项..."), this, &MainWindow::openOptions);
 
     // 窗口
     QMenu *winMenu = menuBar()->addMenu(tr("窗口(&W)"));
@@ -155,8 +165,29 @@ void MainWindow::newConnection() {
         QMessageBox::warning(this, tr("新建连接"), tr("连接名不能为空"));
         return;
     }
-    if (!content_->addConnection(c))
+    if (!content_->addConnection(c)) {
         QMessageBox::warning(this, tr("新建连接"), tr("打开连接失败"));
+        return;
+    }
+    ConnectionStore::save(content_->allConnections());  // 持久化
+}
+
+void MainWindow::openOptions() {
+    OptionsDialog(this).exec();
+}
+
+void MainWindow::openFindReplace() {
+    QPlainTextEdit *ed = qobject_cast<QPlainTextEdit *>(QApplication::focusWidget());
+    if (!ed) {
+        if (auto *q = content_->currentQueryForm()) ed = q->editor();
+    }
+    if (!ed) {
+        QMessageBox::information(this, tr("查找替换"), tr("请先打开一个查询"));
+        return;
+    }
+    auto *d = new FindReplaceDialog(ed, this);
+    d->setAttribute(Qt::WA_DeleteOnClose);
+    d->show();
 }
 
 void MainWindow::saveCurrentQuery() {

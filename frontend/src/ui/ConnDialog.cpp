@@ -39,6 +39,7 @@ ConnDialog::ConnDialog(BackendClient *client, QWidget *parent)
     userEdit_ = new QLineEdit("root");
     pwdEdit_ = new QLineEdit; pwdEdit_->setEchoMode(QLineEdit::Password);
     dbEdit_ = new QLineEdit;
+    dbEdit_->setPlaceholderText(tr("可留空 — 连接后显示服务器上所有数据库"));
     paramsEdit_ = new QLineEdit("useSSL=false&allowPublicKeyRetrieval=true");
     paramsEdit_->setToolTip(tr("JDBC 附加参数,如 serverTimezone=GMT%2B8&characterEncoding=utf8"));
     auto *mysqlForm = new QFormLayout(mysqlPage);
@@ -46,7 +47,7 @@ ConnDialog::ConnDialog(BackendClient *client, QWidget *parent)
     mysqlForm->addRow(tr("端口:"), portSpin_);
     mysqlForm->addRow(tr("用户:"), userEdit_);
     mysqlForm->addRow(tr("密码:"), pwdEdit_);
-    mysqlForm->addRow(tr("数据库:"), dbEdit_);
+    mysqlForm->addRow(tr("数据库(可选):"), dbEdit_);
     mysqlForm->addRow(tr("参数:"), paramsEdit_);
 
     stack_ = new QStackedWidget;

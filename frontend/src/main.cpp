@@ -29,6 +29,8 @@ static QString resolveJar() {
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
+    QCoreApplication::setOrganizationName("JookKit");
+    QCoreApplication::setApplicationName("JookKit");
     std::signal(SIGINT, handleSignal);
     std::signal(SIGTERM, handleSignal);
 

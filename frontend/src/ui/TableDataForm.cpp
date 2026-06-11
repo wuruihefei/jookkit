@@ -5,21 +5,40 @@
 #include <QTableWidget>
 #include <QHeaderView>
 #include <QToolBar>
+#include <QComboBox>
 #include <QLabel>
 #include <QVBoxLayout>
 #include <QMessageBox>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QSettings>
 
 TableDataForm::TableDataForm(BackendClient *client, const QString &connId,
                              const QString &db, const QString &table, QWidget *parent)
     : QWidget(parent), client_(client), connId_(connId), db_(db), table_(table) {
+
+    pageSize_ = QSettings().value("data/pageSize", 200).toInt();
+    if (pageSize_ <= 0) pageSize_ = 200;
 
     auto *toolbar = new QToolBar;
     toolbar->addAction(tr("刷新"), this, &TableDataForm::reload);
     toolbar->addAction(tr("新增行"), this, &TableDataForm::addRow);
     toolbar->addAction(tr("保存新行"), this, &TableDataForm::saveNewRows);
     toolbar->addAction(tr("删除行"), this, &TableDataForm::deleteSelectedRow);
+    toolbar->addSeparator();
+    toolbar->addAction(tr("◀ 上一页"), this, &TableDataForm::prevPage);
+    toolbar->addAction(tr("下一页 ▶"), this, &TableDataForm::nextPage);
+    pageLabel_ = new QLabel(tr("第 1 页"));
+    toolbar->addWidget(pageLabel_);
+    toolbar->addSeparator();
+    toolbar->addWidget(new QLabel(tr(" 每页 ")));
+    auto *sizeCombo = new QComboBox;
+    sizeCombo->addItems({"100", "200", "500", "1000"});
+    int defIdx = sizeCombo->findText(QString::number(pageSize_));
+    sizeCombo->setCurrentIndex(defIdx >= 0 ? defIdx : 1);
+    connect(sizeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &TableDataForm::changePageSize);
+    toolbar->addWidget(sizeCombo);
 
     grid_ = new QTableWidget;
     grid_->horizontalHeader()->setStretchLastSection(true);
@@ -35,13 +54,34 @@ TableDataForm::TableDataForm(BackendClient *client, const QString &connId,
     reload();
 }
 
+void TableDataForm::changePageSize(int idx) {
+    const int sizes[] = {100, 200, 500, 1000};
+    if (idx >= 0 && idx < 4) {
+        pageSize_ = sizes[idx];
+        page_ = 0;
+        reload();
+    }
+}
+
+void TableDataForm::prevPage() {
+    if (page_ > 0) { --page_; reload(); }
+}
+
+void TableDataForm::nextPage() {
+    ++page_;
+    reload();
+}
+
+void TableDataForm::updatePageLabel(int rowsThisPage) {
+    pageLabel_->setText(tr(" 第 %1 页 (本页 %2 行) ").arg(page_ + 1).arg(rowsThisPage));
+}
+
 void TableDataForm::reload() {
     if (!client_) return;
     loading_ = true;
     newRows_.clear();
     rowOriginals_.clear();
 
-    // 主键
     primaryKeys_.clear();
     {
         QJsonObject req;
@@ -55,11 +95,11 @@ void TableDataForm::reload() {
                 primaryKeys_ << p.toString();
     }
 
-    // 数据
     QJsonObject req;
     req.insert("funcId", FuncId::EXEC_SQL);
     req.insert("connId", connId_);
-    req.insert("sql", QString("select * from %1 limit 1000").arg(table_));
+    req.insert("sql", QString("select * from %1 limit %2 offset %3")
+               .arg(table_).arg(pageSize_).arg(page_ * pageSize_));
     auto r = client_->call(req);
     if (!r.ok) {
         status_->setText(tr("加载失败: %1").arg(r.errorMessage));
@@ -69,6 +109,15 @@ void TableDataForm::reload() {
 
     QJsonArray cols = r.data.value("columns").toArray();
     QJsonArray rows = r.data.value("rows").toArray();
+
+    // 若翻过头(空页)且非首页,回退一页
+    if (rows.isEmpty() && page_ > 0) {
+        --page_;
+        loading_ = false;
+        reload();
+        return;
+    }
+
     columns_.clear();
     for (const auto &c : cols) columns_ << c.toObject().value("name").toString();
 
@@ -88,13 +137,13 @@ void TableDataForm::reload() {
         rowOriginals_.append(orig);
     }
 
+    updatePageLabel(rows.size());
     QString pkNote = primaryKeys_.isEmpty()
-        ? tr("(无主键,数据只读)") : tr("(主键: %1)").arg(primaryKeys_.join(","));
-    status_->setText(tr("%1 行 %2").arg(rows.size()).arg(pkNote));
-    if (primaryKeys_.isEmpty())
-        grid_->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    else
-        grid_->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed);
+        ? tr("(无主键,只读)") : tr("(主键: %1)").arg(primaryKeys_.join(","));
+    status_->setText(tr("已加载 %1 行 %2").arg(rows.size()).arg(pkNote));
+    grid_->setEditTriggers(primaryKeys_.isEmpty()
+        ? QAbstractItemView::NoEditTriggers
+        : (QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed));
 
     loading_ = false;
 }
@@ -117,7 +166,7 @@ void TableDataForm::onItemChanged(QTableWidgetItem *item) {
     if (loading_) return;
     int row = item->row();
     int col = item->column();
-    if (newRows_.contains(row)) return;   // 新行等"保存新行"统一插入
+    if (newRows_.contains(row)) return;
     if (primaryKeys_.isEmpty()) return;
 
     const QString colName = columns_.at(col);
@@ -130,10 +179,7 @@ void TableDataForm::onItemChanged(QTableWidgetItem *item) {
     req.insert("values", values);
     req.insert("pk", toJson(pkOf(row)));
     auto r = client_->call(req);
-    if (!r.ok) {
-        status_->setText(tr("更新失败: %1").arg(r.errorMessage));
-        return;
-    }
+    if (!r.ok) { status_->setText(tr("更新失败: %1").arg(r.errorMessage)); return; }
     rowOriginals_[row].insert(colName, item->text());
     status_->setText(tr("已更新 %1 行").arg(r.data.value("affected").toInt()));
 }
@@ -169,10 +215,7 @@ void TableDataForm::saveNewRows() {
         req.insert("table", table_);
         req.insert("values", values);
         auto r = client_->call(req);
-        if (!r.ok) {
-            status_->setText(tr("插入失败: %1").arg(r.errorMessage));
-            return;
-        }
+        if (!r.ok) { status_->setText(tr("插入失败: %1").arg(r.errorMessage)); return; }
         ++inserted;
     }
     status_->setText(tr("已插入 %1 行,刷新中").arg(inserted));
@@ -182,7 +225,7 @@ void TableDataForm::saveNewRows() {
 void TableDataForm::deleteSelectedRow() {
     int row = grid_->currentRow();
     if (row < 0) { status_->setText(tr("请先选中一行")); return; }
-    if (newRows_.contains(row)) {  // 未保存的新行,直接移除
+    if (newRows_.contains(row)) {
         loading_ = true;
         grid_->removeRow(row);
         rowOriginals_.removeAt(row);
@@ -198,10 +241,7 @@ void TableDataForm::deleteSelectedRow() {
     req.insert("table", table_);
     req.insert("pk", toJson(pkOf(row)));
     auto r = client_->call(req);
-    if (!r.ok) {
-        status_->setText(tr("删除失败: %1").arg(r.errorMessage));
-        return;
-    }
+    if (!r.ok) { status_->setText(tr("删除失败: %1").arg(r.errorMessage)); return; }
     status_->setText(tr("已删除 %1 行,刷新中").arg(r.data.value("affected").toInt()));
     reload();
 }

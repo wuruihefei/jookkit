@@ -38,10 +38,34 @@ bool ObjectTree::addConnection(const ConnData &c) {
     item->setIcon(0, Icons::connection(c.type));
     item->setData(0, NodeTypeRole, Conn);
     item->setData(0, ConnIdRole, c.connId);
+    item->setData(0, ConnDataRole, QVariant::fromValue(c));
+    item->setData(0, OpenedRole, true);
     addTopLevelItem(item);
     loadDatabases(item, c.connId);
     item->setExpanded(true);
     return true;
+}
+
+void ObjectTree::addSavedConnection(const ConnData &c) {
+    auto *item = new QTreeWidgetItem(this);
+    item->setText(0, c.connId.isEmpty() ? c.type : c.connId);
+    item->setIcon(0, Icons::connection(c.type));
+    item->setData(0, NodeTypeRole, Conn);
+    item->setData(0, ConnIdRole, c.connId);
+    item->setData(0, ConnDataRole, QVariant::fromValue(c));
+    item->setData(0, OpenedRole, false);
+    addTopLevelItem(item);
+    // 占位子节点,使其可展开;展开时再真正连接
+    new QTreeWidgetItem(item, QStringList(tr("(展开以连接)")));
+}
+
+QList<ConnData> ObjectTree::allConnections() const {
+    QList<ConnData> out;
+    for (int i = 0; i < topLevelItemCount(); ++i) {
+        QVariant v = topLevelItem(i)->data(0, ConnDataRole);
+        if (v.canConvert<ConnData>()) out << v.value<ConnData>();
+    }
+    return out;
 }
 
 void ObjectTree::loadDatabases(QTreeWidgetItem *connItem, const QString &connId) {
@@ -99,7 +123,24 @@ QString ObjectTree::currentTable() const {
 }
 
 void ObjectTree::onItemExpanded(QTreeWidgetItem *item) {
-    if (item->data(0, NodeTypeRole).toInt() != Db) return;
+    int type = item->data(0, NodeTypeRole).toInt();
+    if (type == Conn) {
+        if (item->data(0, OpenedRole).toBool()) return;
+        QVariant v = item->data(0, ConnDataRole);
+        if (!v.canConvert<ConnData>()) return;
+        ConnData c = v.value<ConnData>();
+        auto r = client_->call(c.toOpenRequest(), 10000);
+        // 清掉占位子节点
+        for (auto *child : item->takeChildren()) delete child;
+        if (!r.ok) {
+            new QTreeWidgetItem(item, QStringList(tr("(连接失败: %1)").arg(r.errorMessage)));
+            return;
+        }
+        item->setData(0, OpenedRole, true);
+        loadDatabases(item, c.connId);
+        return;
+    }
+    if (type != Db) return;
     if (item->data(0, LoadedRole).toBool()) return;
     item->setData(0, LoadedRole, true);
     loadTables(item, item->data(0, ConnIdRole).toString(),

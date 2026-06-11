@@ -1,4 +1,5 @@
 #include "ui/ObjectTree.h"
+#include "ui/Icons.h"
 #include "backend/BackendClient.h"
 #include "backend/FuncId.h"
 
@@ -34,6 +35,7 @@ bool ObjectTree::addConnection(const ConnData &c) {
 
     auto *item = new QTreeWidgetItem(this);
     item->setText(0, c.connId.isEmpty() ? c.type : c.connId);
+    item->setIcon(0, Icons::connection(c.type));
     item->setData(0, NodeTypeRole, Conn);
     item->setData(0, ConnIdRole, c.connId);
     addTopLevelItem(item);
@@ -51,6 +53,7 @@ void ObjectTree::loadDatabases(QTreeWidgetItem *connItem, const QString &connId)
     for (const auto &d : r.data.value("databases").toArray()) {
         auto *dbItem = new QTreeWidgetItem(connItem);
         dbItem->setText(0, d.toString());
+        dbItem->setIcon(0, Icons::database());
         dbItem->setData(0, NodeTypeRole, Db);
         dbItem->setData(0, ConnIdRole, connId);
         dbItem->setData(0, DbRole, d.toString());
@@ -72,6 +75,7 @@ void ObjectTree::loadTables(QTreeWidgetItem *dbItem, const QString &connId, cons
     for (const auto &t : r.data.value("tables").toArray()) {
         auto *tItem = new QTreeWidgetItem(dbItem);
         tItem->setText(0, t.toString());
+        tItem->setIcon(0, Icons::table());
         tItem->setData(0, NodeTypeRole, Table);
         tItem->setData(0, ConnIdRole, connId);
         tItem->setData(0, DbRole, db);

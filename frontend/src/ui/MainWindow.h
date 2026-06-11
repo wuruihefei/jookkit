@@ -7,8 +7,9 @@
 class BackendProcess;
 class BackendClient;
 class ContentWidget;
+class QToolBar;
 
-// 主窗口:启动时拉起后端;菜单栏对齐 jookdb(文件/编辑/查询/工具/窗口/帮助)。
+// 主窗口:菜单栏对齐 Navicat(文件/编辑/视图/收藏/工具/窗口/帮助)。
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
@@ -21,12 +22,13 @@ private slots:
     void about();
 
 private:
-    void buildMenus();
     void buildToolBar();
+    void buildMenus();
 
     BackendProcess *proc_;
     BackendClient *client_;
     ContentWidget *content_;
+    QToolBar *mainTb_ = nullptr;
 };
 
 #endif

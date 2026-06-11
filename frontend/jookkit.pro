@@ -17,6 +17,8 @@ SOURCES += \
     src/ui/QueryForm.cpp \
     src/ui/TableStructureForm.cpp \
     src/ui/TableDataForm.cpp \
+    src/ui/InformationPane.cpp \
+    src/ui/Icons.cpp \
     src/ui/SqlEditor.cpp \
     src/sql/SqlSplitter.cpp \
     src/sql/SqlHighlighter.cpp \
@@ -32,6 +34,8 @@ HEADERS += \
     src/ui/QueryForm.h \
     src/ui/TableStructureForm.h \
     src/ui/TableDataForm.h \
+    src/ui/InformationPane.h \
+    src/ui/Icons.h \
     src/ui/SqlEditor.h \
     src/sql/SqlSplitter.h \
     src/sql/SqlHighlighter.h \

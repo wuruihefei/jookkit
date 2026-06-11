@@ -8,13 +8,14 @@ INCLUDEPATH += src
 
 SOURCES += \
     src/main.cpp \
-    src/ui/MinimalWindow.cpp \
-    src/ui/SqlEditor.cpp \
-    src/ui/ConnDialog.cpp \
+    src/ui/MainWindow.cpp \
+    src/ui/ContentWidget.cpp \
     src/ui/ObjectTree.cpp \
+    src/ui/ConnDialog.cpp \
     src/ui/QueryForm.cpp \
     src/ui/TableStructureForm.cpp \
     src/ui/TableDataForm.cpp \
+    src/ui/SqlEditor.cpp \
     src/sql/SqlSplitter.cpp \
     src/sql/SqlHighlighter.cpp \
     src/backend/ConnData.cpp \
@@ -22,13 +23,14 @@ SOURCES += \
     src/backend/BackendClient.cpp
 
 HEADERS += \
-    src/ui/MinimalWindow.h \
-    src/ui/SqlEditor.h \
-    src/ui/ConnDialog.h \
+    src/ui/MainWindow.h \
+    src/ui/ContentWidget.h \
     src/ui/ObjectTree.h \
+    src/ui/ConnDialog.h \
     src/ui/QueryForm.h \
     src/ui/TableStructureForm.h \
     src/ui/TableDataForm.h \
+    src/ui/SqlEditor.h \
     src/sql/SqlSplitter.h \
     src/sql/SqlHighlighter.h \
     src/backend/ConnData.h \

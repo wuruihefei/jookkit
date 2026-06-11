@@ -63,6 +63,22 @@ void ObjectTree::loadTables(QTreeWidgetItem *dbItem, const QString &connId, cons
     }
 }
 
+QString ObjectTree::currentConnId() const {
+    QTreeWidgetItem *it = currentItem();
+    return it ? it->data(0, ConnIdRole).toString() : QString();
+}
+
+QString ObjectTree::currentDb() const {
+    QTreeWidgetItem *it = currentItem();
+    return it ? it->data(0, DbRole).toString() : QString();
+}
+
+QString ObjectTree::currentTable() const {
+    QTreeWidgetItem *it = currentItem();
+    if (it && it->data(0, NodeTypeRole).toInt() == Table) return it->text(0);
+    return QString();
+}
+
 void ObjectTree::onItemExpanded(QTreeWidgetItem *item) {
     if (item->data(0, NodeTypeRole).toInt() != Db) return;
     if (item->data(0, LoadedRole).toBool()) return;

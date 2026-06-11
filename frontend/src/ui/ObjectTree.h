@@ -23,6 +23,11 @@ public:
     // 打开连接(OPEN_CONNECTION)并把数据库挂为子节点。成功返回 true。
     bool addConnection(const ConnData &c);
 
+    // 当前选中项相关的上下文(无则返回空串)。
+    QString currentConnId() const;
+    QString currentDb() const;
+    QString currentTable() const;
+
 signals:
     void tableActivated(const QString &connId, const QString &db, const QString &table);
 

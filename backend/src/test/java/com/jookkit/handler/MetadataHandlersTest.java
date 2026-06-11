@@ -46,6 +46,21 @@ class MetadataHandlersTest {
     }
 
     @Test
+    void getDdlReturnsCreateStatement() {
+        new ConnectionHandlers.Open(reg).handle(openSqlite("c3"));
+        JsonObject ddl = new JsonObject();
+        ddl.addProperty("connId", "c3");
+        ddl.addProperty("sql", "create table widget(id integer primary key, nm text)");
+        new ExecSqlHandler(reg).handle(ddl);
+
+        JsonObject q = new JsonObject();
+        q.addProperty("connId", "c3");
+        q.addProperty("table", "widget");
+        JsonObject d = new MetadataHandlers.GetDdl(reg).handle(q);
+        assertTrue(d.get("ddl").getAsString().toLowerCase().contains("create table"));
+    }
+
+    @Test
     void listDatabasesReturnsMainForSqlite() {
         ConnectionHandlers.Open open = new ConnectionHandlers.Open(reg);
         open.handle(openSqlite("c2"));

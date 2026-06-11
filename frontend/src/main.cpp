@@ -1,14 +1,11 @@
 #include <QApplication>
 #include <QStyleFactory>
 #include <QFile>
-#include <QPixmap>
-#include <QPainter>
-#include <QIcon>
-#include <QFont>
 #include <QMetaObject>
 #include <QFileInfo>
 #include <csignal>
 #include "ui/MainWindow.h"
+#include "ui/Icons.h"
 
 // 收到 SIGINT/SIGTERM 时排队触发 Qt 正常退出,使 BackendProcess::stop() 得以运行。
 static void handleSignal(int) {
@@ -30,25 +27,6 @@ static QString resolveJar() {
     return env.isEmpty() ? candidates.last() : env;
 }
 
-// 程序化生成应用图标(圆角蓝底白色 J),免外部 .ico/.png。
-static QIcon appIcon() {
-    QPixmap pm(64, 64);
-    pm.fill(Qt::transparent);
-    QPainter p(&pm);
-    p.setRenderHint(QPainter::Antialiasing);
-    p.setBrush(QColor("#2563eb"));
-    p.setPen(Qt::NoPen);
-    p.drawRoundedRect(6, 6, 52, 52, 12, 12);
-    p.setPen(Qt::white);
-    QFont f = p.font();
-    f.setBold(true);
-    f.setPixelSize(34);
-    p.setFont(f);
-    p.drawText(QRect(6, 6, 52, 52), Qt::AlignCenter, "J");
-    p.end();
-    return QIcon(pm);
-}
-
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
     std::signal(SIGINT, handleSignal);
@@ -60,7 +38,7 @@ int main(int argc, char *argv[]) {
         app.setStyleSheet(QString::fromUtf8(qss.readAll()));
         qss.close();
     }
-    app.setWindowIcon(appIcon());
+    app.setWindowIcon(Icons::app());
 
     MainWindow w(resolveJar());
     w.show();

@@ -61,6 +61,43 @@ public final class MetadataHandlers {
         }
     }
 
+    public static final class GetDdl implements Handler {
+        private final ConnectionRegistry registry;
+        public GetDdl(ConnectionRegistry registry) { this.registry = registry; }
+
+        @Override
+        public JsonObject handle(JsonObject req) {
+            Connection c = registry.get(req.get("connId").getAsString());
+            String table = req.get("table").getAsString();
+            try {
+                String ddl;
+                if (isSqlite(c)) {
+                    try (var ps = c.prepareStatement(
+                            "SELECT sql FROM sqlite_master WHERE name = ?")) {
+                        ps.setString(1, table);
+                        try (ResultSet rs = ps.executeQuery()) {
+                            ddl = rs.next() ? rs.getString(1) : "";
+                        }
+                    }
+                } else {
+                    Dialect d = Dialects.of("mysql");
+                    String qualified = req.has("db")
+                            ? d.quote(req.get("db").getAsString()) + "." + d.quote(table)
+                            : d.quote(table);
+                    try (var st = c.createStatement();
+                         ResultSet rs = st.executeQuery("SHOW CREATE TABLE " + qualified)) {
+                        ddl = rs.next() ? rs.getString(2) : "";
+                    }
+                }
+                JsonObject data = new JsonObject();
+                data.addProperty("ddl", ddl);
+                return data;
+            } catch (SQLException e) {
+                throw new JookException("SQL_ERROR", e.getMessage(), e.getSQLState());
+            }
+        }
+    }
+
     public static final class DescribeTable implements Handler {
         private final ConnectionRegistry registry;
         public DescribeTable(ConnectionRegistry registry) { this.registry = registry; }

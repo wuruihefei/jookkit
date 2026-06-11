@@ -10,6 +10,7 @@ public final class FuncId {
     public static final int LIST_DATABASES = 2001;
     public static final int LIST_TABLES = 2002;
     public static final int DESCRIBE_TABLE = 2003;
+    public static final int GET_DDL = 2004;
 
     public static final int EXEC_SQL = 3001;
 

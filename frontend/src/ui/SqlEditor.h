@@ -14,6 +14,9 @@ public:
     void lineNumberAreaPaintEvent(QPaintEvent *event);
     int lineNumberAreaWidth() const;
 
+    // 对选中行(或当前行)切换 "-- " 行注释。
+    void toggleComment();
+
 protected:
     void resizeEvent(QResizeEvent *event) override;
 

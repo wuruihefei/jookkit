@@ -4,12 +4,27 @@
 
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QMenu>
 
 ObjectTree::ObjectTree(BackendClient *client, QWidget *parent)
     : QTreeWidget(parent), client_(client) {
     setHeaderHidden(true);
+    setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, &QTreeWidget::itemExpanded, this, &ObjectTree::onItemExpanded);
     connect(this, &QTreeWidget::itemDoubleClicked, this, &ObjectTree::onItemDoubleClicked);
+    connect(this, &QTreeWidget::customContextMenuRequested, this, &ObjectTree::showContextMenu);
+}
+
+void ObjectTree::showContextMenu(const QPoint &pos) {
+    QTreeWidgetItem *item = itemAt(pos);
+    if (!item || item->data(0, NodeTypeRole).toInt() != Table) return;
+    const QString connId = item->data(0, ConnIdRole).toString();
+    const QString db = item->data(0, DbRole).toString();
+    const QString table = item->text(0);
+    QMenu menu(this);
+    menu.addAction(tr("打开数据"), this, [=]{ emit tableActivated(connId, db, table); });
+    menu.addAction(tr("查看结构"), this, [=]{ emit structureRequested(connId, db, table); });
+    menu.exec(viewport()->mapToGlobal(pos));
 }
 
 bool ObjectTree::addConnection(const ConnData &c) {

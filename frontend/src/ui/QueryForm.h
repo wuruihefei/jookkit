@@ -18,11 +18,15 @@ public:
               const QString &db, QWidget *parent = nullptr);
 
     void setSql(const QString &sql);
+    SqlEditor *editor() const { return editor_; }
 
 public slots:
-    void run();
+    void run();         // 运行全部语句
+    void runCurrent();  // 运行选中文本(无选中则全部)
+    void saveSql();     // 保存编辑器内容到 .sql 文件
 
 private:
+    void runText(const QString &sql);
     void showResult(const QJsonObject &data);
 
     BackendClient *client_;

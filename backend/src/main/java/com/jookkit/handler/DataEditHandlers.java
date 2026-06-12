@@ -31,6 +31,16 @@ public final class DataEditHandlers {
         else ps.setString(idx, p.getAsString());
     }
 
+    /** 表名限定:请求带非空 db 时加库名前缀,不依赖连接默认库(否则未选库报 1046,或误写其它库同名表)。 */
+    static String qualifiedTable(Dialect d, JsonObject req) {
+        String table = req.get("table").getAsString();
+        if (req.has("db") && !req.get("db").isJsonNull()) {
+            String db = req.get("db").getAsString();
+            if (!db.isEmpty()) return d.quote(db) + "." + d.quote(table);
+        }
+        return d.quote(table);
+    }
+
     private static int run(ConnectionRegistry reg, String connId, String sql, List<JsonElement> binds) {
         Connection c = reg.get(connId);
         try (PreparedStatement ps = c.prepareStatement(sql)) {
@@ -56,7 +66,6 @@ public final class DataEditHandlers {
             Connection c = reg.get(req.get("connId").getAsString());
             try {
                 Dialect d = dialectFor(c);
-                String table = req.get("table").getAsString();
                 JsonObject values = req.getAsJsonObject("values");
                 List<String> cols = new ArrayList<>();
                 List<String> qs = new ArrayList<>();
@@ -66,7 +75,7 @@ public final class DataEditHandlers {
                     qs.add("?");
                     binds.add(e.getValue());
                 }
-                String sql = "INSERT INTO " + d.quote(table) + " ("
+                String sql = "INSERT INTO " + qualifiedTable(d, req) + " ("
                         + String.join(",", cols) + ") VALUES (" + String.join(",", qs) + ")";
                 return affected(run(reg, req.get("connId").getAsString(), sql, binds));
             } catch (SQLException e) {
@@ -84,7 +93,6 @@ public final class DataEditHandlers {
             Connection c = reg.get(req.get("connId").getAsString());
             try {
                 Dialect d = dialectFor(c);
-                String table = req.get("table").getAsString();
                 JsonObject values = req.getAsJsonObject("values");
                 JsonObject pk = req.getAsJsonObject("pk");
                 List<String> sets = new ArrayList<>();
@@ -98,7 +106,7 @@ public final class DataEditHandlers {
                     where.add(d.quote(e.getKey()) + "=?");
                     binds.add(e.getValue());
                 }
-                String sql = "UPDATE " + d.quote(table) + " SET " + String.join(",", sets)
+                String sql = "UPDATE " + qualifiedTable(d, req) + " SET " + String.join(",", sets)
                         + " WHERE " + String.join(" AND ", where);
                 return affected(run(reg, req.get("connId").getAsString(), sql, binds));
             } catch (SQLException e) {
@@ -116,7 +124,6 @@ public final class DataEditHandlers {
             Connection c = reg.get(req.get("connId").getAsString());
             try {
                 Dialect d = dialectFor(c);
-                String table = req.get("table").getAsString();
                 JsonObject pk = req.getAsJsonObject("pk");
                 List<String> where = new ArrayList<>();
                 List<JsonElement> binds = new ArrayList<>();
@@ -124,7 +131,7 @@ public final class DataEditHandlers {
                     where.add(d.quote(e.getKey()) + "=?");
                     binds.add(e.getValue());
                 }
-                String sql = "DELETE FROM " + d.quote(table)
+                String sql = "DELETE FROM " + qualifiedTable(d, req)
                         + " WHERE " + String.join(" AND ", where);
                 return affected(run(reg, req.get("connId").getAsString(), sql, binds));
             } catch (SQLException e) {

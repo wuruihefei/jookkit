@@ -105,3 +105,4 @@ JOOKKIT_JAR=../backend/target/jookkit-backend.jar QT_QPA_PLATFORM=offscreen ./ts
 | [MySQL Connector/J](https://github.com/mysql/mysql-connector-j) | MySQL 8 驱动 | GPL-2.0（含 Universal FOSS Exception） |
 | [JUnit 5](https://junit.org/junit5/) | 后端测试框架（仅测试期） | EPL-2.0 |
 | [MXE](https://mxe.cc/) | Linux→Windows 交叉编译工具链（仅构建期） | MIT |
+| [Devicon](https://github.com/devicons/devicon) | MySQL/SQLite 品牌图标（连接节点） | MIT（商标归各自所有者） |

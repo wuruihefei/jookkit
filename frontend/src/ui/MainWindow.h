@@ -26,6 +26,9 @@ private slots:
     void openFindReplace();
     void openUserManager();
     void about();
+    void rebuildFavMenu();      // 打开收藏菜单时按存储重建
+    void favoriteCurrent();     // 收藏左侧树当前选中的表
+    void manageFavorites();     // 管理收藏对话框
 
 private:
     void buildToolBar();
@@ -35,6 +38,7 @@ private:
     BackendClient *client_;
     ContentWidget *content_;
     QToolBar *mainTb_ = nullptr;
+    QMenu *favMenu_ = nullptr;
 };
 
 #endif

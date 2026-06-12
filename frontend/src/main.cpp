@@ -20,6 +20,7 @@ static QString resolveJar() {
     const QStringList candidates = {
         dir + "/jookkit-backend.jar",
         dir + "/backend/jookkit-backend.jar",
+        dir + "/../Resources/backend/jookkit-backend.jar",  // mac .app 布局
         dir + "/../backend/target/jookkit-backend.jar"
     };
     for (const QString &c : candidates)

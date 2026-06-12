@@ -1,15 +1,27 @@
 #include "ui/ObjectTree.h"
 #include "ui/Icons.h"
+#include "ui/ConnDialog.h"
 #include "backend/BackendClient.h"
 #include "backend/FuncId.h"
 
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QMenu>
+#include <QMessageBox>
+
+namespace {
+// 连接节点悬停提示:类型 + 地址,便于区分同名/多个连接
+QString connTip(const ConnData &c) {
+    if (c.type == "sqlite")
+        return QStringLiteral("SQLite  %1").arg(c.file);
+    return QStringLiteral("%1  %2:%3").arg(c.type.toUpper(), c.host).arg(c.port);
+}
+}
 
 ObjectTree::ObjectTree(BackendClient *client, QWidget *parent)
     : QTreeWidget(parent), client_(client) {
     setHeaderHidden(true);
+    setIconSize(QSize(18, 18));  // 默认 16 偏小,状态点/类型色不易辨认
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, &QTreeWidget::itemExpanded, this, &ObjectTree::onItemExpanded);
     connect(this, &QTreeWidget::itemDoubleClicked, this, &ObjectTree::onItemDoubleClicked);
@@ -18,14 +30,122 @@ ObjectTree::ObjectTree(BackendClient *client, QWidget *parent)
 
 void ObjectTree::showContextMenu(const QPoint &pos) {
     QTreeWidgetItem *item = itemAt(pos);
-    if (!item || item->data(0, NodeTypeRole).toInt() != Table) return;
-    const QString connId = item->data(0, ConnIdRole).toString();
-    const QString db = item->data(0, DbRole).toString();
-    const QString table = item->text(0);
+    if (!item) return;
+    const int type = item->data(0, NodeTypeRole).toInt();
     QMenu menu(this);
-    menu.addAction(tr("打开数据"), this, [=]{ emit tableActivated(connId, db, table); });
-    menu.addAction(tr("查看结构"), this, [=]{ emit structureRequested(connId, db, table); });
+    if (type == Conn) {
+        if (item->data(0, OpenedRole).toBool())
+            menu.addAction(Icons::plugOff(), tr("关闭连接"), this, [=]{ closeConnection(item); });
+        else
+            menu.addAction(Icons::plugOn(), tr("打开连接"), this, [=]{ item->setExpanded(true); });
+        menu.addSeparator();
+        menu.addAction(Icons::edit(), tr("编辑连接..."), this, [=]{ editConnection(item); });
+        menu.addAction(Icons::copy(), tr("复制连接"), this, [=]{ duplicateConnection(item); });
+        menu.addSeparator();
+        menu.addAction(Icons::trash(), tr("删除连接"), this, [=]{ removeConnection(item); });
+    } else if (type == Table) {
+        const QString connId = item->data(0, ConnIdRole).toString();
+        const QString db = item->data(0, DbRole).toString();
+        const QString table = item->text(0);
+        menu.addAction(Icons::data(), tr("打开数据"), this, [=]{ emit tableActivated(connId, db, table); });
+        menu.addAction(Icons::structure(), tr("查看结构"), this, [=]{ emit structureRequested(connId, db, table); });
+    } else {
+        return;
+    }
     menu.exec(viewport()->mapToGlobal(pos));
+}
+
+bool ObjectTree::connIdExists(const QString &id, const QTreeWidgetItem *except) const {
+    for (int i = 0; i < topLevelItemCount(); ++i) {
+        const QTreeWidgetItem *it = topLevelItem(i);
+        if (it != except && it->data(0, ConnIdRole).toString() == id) return true;
+    }
+    return false;
+}
+
+QString ObjectTree::uniqueConnId(const QString &base) const {
+    if (!connIdExists(base)) return base;
+    for (int n = 2; ; ++n) {
+        const QString cand = base + QString::number(n);
+        if (!connIdExists(cand)) return cand;
+    }
+}
+
+void ObjectTree::closeBackendConn(const QString &connId) {
+    if (!client_) return;
+    QJsonObject req;
+    req.insert("funcId", FuncId::CLOSE_CONNECTION);
+    req.insert("connId", connId);
+    client_->call(req);  // 失败也无妨(可能本就未打开)
+}
+
+void ObjectTree::resetToClosed(QTreeWidgetItem *item, const ConnData &c) {
+    item->setExpanded(false);
+    for (auto *child : item->takeChildren()) delete child;
+    new QTreeWidgetItem(item, QStringList(tr("(展开以连接)")));
+    item->setText(0, c.connId.isEmpty() ? c.type : c.connId);
+    item->setIcon(0, Icons::connection(c.type, false));
+    item->setToolTip(0, connTip(c));
+    item->setData(0, ConnIdRole, c.connId);
+    item->setData(0, ConnDataRole, QVariant::fromValue(c));
+    item->setData(0, OpenedRole, false);
+}
+
+void ObjectTree::closeConnection(QTreeWidgetItem *item) {
+    QVariant v = item->data(0, ConnDataRole);
+    if (!v.canConvert<ConnData>()) return;
+    const ConnData c = v.value<ConnData>();
+    closeBackendConn(c.connId);
+    resetToClosed(item, c);
+}
+
+void ObjectTree::editConnection(QTreeWidgetItem *item) {
+    QVariant v = item->data(0, ConnDataRole);
+    if (!v.canConvert<ConnData>()) return;
+    const ConnData old = v.value<ConnData>();
+
+    // 编辑前必须断开:避免改参数时连接仍挂在旧会话上
+    if (item->data(0, OpenedRole).toBool()) {
+        if (QMessageBox::question(this, tr("编辑连接"),
+                tr("编辑前需要先关闭连接 \"%1\"。\n关闭并继续编辑?").arg(old.connId))
+            != QMessageBox::Yes) return;
+        closeConnection(item);
+    }
+
+    ConnDialog dlg(client_, this);
+    dlg.setConnData(old);
+    if (dlg.exec() != QDialog::Accepted) return;
+    ConnData c = dlg.connData();
+    if (c.connId.isEmpty()) {
+        QMessageBox::warning(this, tr("编辑连接"), tr("连接名不能为空"));
+        return;
+    }
+    if (connIdExists(c.connId, item)) {
+        QMessageBox::warning(this, tr("编辑连接"), tr("连接名 \"%1\" 已存在").arg(c.connId));
+        return;
+    }
+
+    resetToClosed(item, c);  // 应用新配置,保持未连接,展开时按新配置重连
+    emit connectionsChanged();
+}
+
+void ObjectTree::duplicateConnection(QTreeWidgetItem *item) {
+    QVariant v = item->data(0, ConnDataRole);
+    if (!v.canConvert<ConnData>()) return;
+    ConnData c = v.value<ConnData>();
+    c.connId = uniqueConnId(c.connId + tr("_副本"));
+    addSavedConnection(c);
+    emit connectionsChanged();
+}
+
+void ObjectTree::removeConnection(QTreeWidgetItem *item) {
+    const QString id = item->data(0, ConnIdRole).toString();
+    if (QMessageBox::question(this, tr("删除连接"),
+            tr("确定删除连接 \"%1\" 吗?\n仅删除连接配置,不影响数据库数据。").arg(id))
+        != QMessageBox::Yes) return;
+    if (item->data(0, OpenedRole).toBool()) closeBackendConn(id);
+    delete item;
+    emit connectionsChanged();
 }
 
 bool ObjectTree::addConnection(const ConnData &c) {
@@ -35,7 +155,8 @@ bool ObjectTree::addConnection(const ConnData &c) {
 
     auto *item = new QTreeWidgetItem(this);
     item->setText(0, c.connId.isEmpty() ? c.type : c.connId);
-    item->setIcon(0, Icons::connection(c.type));
+    item->setIcon(0, Icons::connection(c.type, true));
+    item->setToolTip(0, connTip(c));
     item->setData(0, NodeTypeRole, Conn);
     item->setData(0, ConnIdRole, c.connId);
     item->setData(0, ConnDataRole, QVariant::fromValue(c));
@@ -49,7 +170,8 @@ bool ObjectTree::addConnection(const ConnData &c) {
 void ObjectTree::addSavedConnection(const ConnData &c) {
     auto *item = new QTreeWidgetItem(this);
     item->setText(0, c.connId.isEmpty() ? c.type : c.connId);
-    item->setIcon(0, Icons::connection(c.type));
+    item->setIcon(0, Icons::connection(c.type, false));  // 未连接:灰显
+    item->setToolTip(0, connTip(c));
     item->setData(0, NodeTypeRole, Conn);
     item->setData(0, ConnIdRole, c.connId);
     item->setData(0, ConnDataRole, QVariant::fromValue(c));
@@ -106,6 +228,25 @@ void ObjectTree::loadTables(QTreeWidgetItem *dbItem, const QString &connId, cons
     }
 }
 
+bool ObjectTree::ensureOpen(const QString &connId) {
+    for (int i = 0; i < topLevelItemCount(); ++i) {
+        QTreeWidgetItem *item = topLevelItem(i);
+        if (item->data(0, ConnIdRole).toString() != connId) continue;
+        if (item->data(0, OpenedRole).toBool()) return true;
+        QVariant v = item->data(0, ConnDataRole);
+        if (!v.canConvert<ConnData>() || !client_) return false;
+        const ConnData c = v.value<ConnData>();
+        auto r = client_->call(c.toOpenRequest(), 10000);
+        if (!r.ok) return false;
+        for (auto *child : item->takeChildren()) delete child;
+        item->setData(0, OpenedRole, true);
+        item->setIcon(0, Icons::connection(c.type, true));
+        loadDatabases(item, c.connId);
+        return true;
+    }
+    return false;  // 树上没有这个连接
+}
+
 QString ObjectTree::currentConnId() const {
     QTreeWidgetItem *it = currentItem();
     return it ? it->data(0, ConnIdRole).toString() : QString();
@@ -137,6 +278,7 @@ void ObjectTree::onItemExpanded(QTreeWidgetItem *item) {
             return;
         }
         item->setData(0, OpenedRole, true);
+        item->setIcon(0, Icons::connection(c.type, true));  // 连接成功:点亮
         loadDatabases(item, c.connId);
         return;
     }

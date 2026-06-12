@@ -29,6 +29,7 @@ SOURCES += \
     src/sql/SqlHighlighter.cpp \
     src/sql/SqlFormat.cpp \
     src/store/ConnectionStore.cpp \
+    src/store/FavoriteStore.cpp \
     src/backend/ConnData.cpp \
     src/backend/BackendProcess.cpp \
     src/backend/BackendClient.cpp
@@ -51,6 +52,7 @@ HEADERS += \
     src/sql/SqlHighlighter.h \
     src/sql/SqlFormat.h \
     src/store/ConnectionStore.h \
+    src/store/FavoriteStore.h \
     src/backend/ConnData.h \
     src/backend/BackendProcess.h \
     src/backend/BackendClient.h \

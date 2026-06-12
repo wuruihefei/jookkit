@@ -7,3 +7,9 @@ ui_*
 target/
 .idea/
 dependency-reduced-pom.xml
+# 一次性工具的本地编译产物
+frontend/tools/mkbranch/mkbranch
+frontend/tools/mkdbicons/mkdbicons
+frontend/tools/stylepreview/stylepreview
+frontend/tools/treepreview/treepreview
+frontend/tools/*/qrc_resources.cpp

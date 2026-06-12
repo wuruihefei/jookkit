@@ -16,6 +16,8 @@ class ConnDialog : public QDialog {
 public:
     explicit ConnDialog(BackendClient *client, QWidget *parent = nullptr);
     ConnData connData() const;
+    // 回填既有连接配置(编辑模式,标题改为「编辑连接」)
+    void setConnData(const ConnData &c);
 
 private slots:
     void onTypeChanged(int index);

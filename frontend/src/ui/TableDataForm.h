@@ -20,6 +20,7 @@ class TableDataForm : public QWidget {
 public:
     TableDataForm(BackendClient *client, const QString &connId,
                   const QString &db, const QString &table,
+                  const QString &dbType = QString(),
                   QWidget *parent = nullptr);
 
 private slots:
@@ -35,11 +36,16 @@ private slots:
 private:
     QMap<QString, QString> pkOf(int row) const;
     void updatePageLabel(int rowsThisPage);
+    QString quoteIdent(const QString &id) const;
+    // 限定表名(db 非空时带库名前缀):不依赖连接默认库,
+    // 否则连接未选库时报 1046,或查询/USE 切库后误读其它库同名表。
+    QString qualifiedTable() const;
 
     BackendClient *client_;
     QString connId_;
     QString db_;
     QString table_;
+    QString dbType_;  // "mysql" | "sqlite" | 空(未知,按 mysql 引号处理)
 
     QTableWidget *grid_;
     QLabel *status_;

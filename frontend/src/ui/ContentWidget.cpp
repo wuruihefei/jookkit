@@ -129,7 +129,17 @@ void ContentWidget::newQuery() {
 }
 
 void ContentWidget::openTableData(const QString &connId, const QString &db, const QString &table) {
-    addTab(new TableDataForm(client_, connId, db, table), tr("数据: %1").arg(table));
+    // 收藏直达等场景:连接可能还没打开,先确保打开
+    if (!tree_->ensureOpen(connId)) {
+        QMessageBox::warning(this, tr("打开数据"),
+                             tr("无法打开连接 \"%1\",请检查连接配置").arg(connId));
+        return;
+    }
+    QString dbType;
+    for (const ConnData &c : tree_->allConnections())
+        if (c.connId == connId) { dbType = c.type; break; }
+    addTab(new TableDataForm(client_, connId, db, table, dbType),
+           tr("数据: %1").arg(table));
 }
 
 void ContentWidget::openTableStructure(const QString &connId, const QString &db, const QString &table) {

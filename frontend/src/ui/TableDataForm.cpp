@@ -15,8 +15,10 @@
 #include <QSettings>
 
 TableDataForm::TableDataForm(BackendClient *client, const QString &connId,
-                             const QString &db, const QString &table, QWidget *parent)
-    : QWidget(parent), client_(client), connId_(connId), db_(db), table_(table) {
+                             const QString &db, const QString &table,
+                             const QString &dbType, QWidget *parent)
+    : QWidget(parent), client_(client), connId_(connId), db_(db), table_(table),
+      dbType_(dbType) {
 
     pageSize_ = QSettings().value("data/pageSize", 20).toInt();
     if (pageSize_ <= 0) pageSize_ = 20;
@@ -78,6 +80,16 @@ void TableDataForm::updatePageLabel(int rowsThisPage) {
     pageLabel_->setText(tr(" 第 %1 页 (本页 %2 行) ").arg(page_ + 1).arg(rowsThisPage));
 }
 
+QString TableDataForm::quoteIdent(const QString &id) const {
+    if (dbType_ == "sqlite") return "\"" + QString(id).replace("\"", "\"\"") + "\"";
+    return "`" + QString(id).replace("`", "``") + "`";
+}
+
+QString TableDataForm::qualifiedTable() const {
+    if (db_.isEmpty()) return quoteIdent(table_);
+    return quoteIdent(db_) + "." + quoteIdent(table_);
+}
+
 void TableDataForm::reload() {
     if (!client_) return;
     loading_ = true;
@@ -101,7 +113,7 @@ void TableDataForm::reload() {
     req.insert("funcId", FuncId::EXEC_SQL);
     req.insert("connId", connId_);
     req.insert("sql", QString("select * from %1 limit %2 offset %3")
-               .arg(table_).arg(pageSize_).arg(page_ * pageSize_));
+               .arg(qualifiedTable()).arg(pageSize_).arg(page_ * pageSize_));
     auto r = client_->call(req);
     if (!r.ok) {
         status_->setText(tr("加载失败: %1").arg(r.errorMessage));
@@ -177,6 +189,7 @@ void TableDataForm::onItemChanged(QTableWidgetItem *item) {
     QJsonObject req;
     req.insert("funcId", FuncId::UPDATE_ROW);
     req.insert("connId", connId_);
+    req.insert("db", db_);
     req.insert("table", table_);
     req.insert("values", values);
     req.insert("pk", toJson(pkOf(row)));
@@ -214,6 +227,7 @@ void TableDataForm::saveNewRows() {
         QJsonObject req;
         req.insert("funcId", FuncId::INSERT_ROW);
         req.insert("connId", connId_);
+        req.insert("db", db_);
         req.insert("table", table_);
         req.insert("values", values);
         auto r = client_->call(req);
@@ -240,6 +254,7 @@ void TableDataForm::deleteSelectedRow() {
     QJsonObject req;
     req.insert("funcId", FuncId::DELETE_ROW);
     req.insert("connId", connId_);
+    req.insert("db", db_);
     req.insert("table", table_);
     req.insert("pk", toJson(pkOf(row)));
     auto r = client_->call(req);

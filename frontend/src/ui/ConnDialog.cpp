@@ -108,6 +108,23 @@ ConnData ConnDialog::connData() const {
     return build();
 }
 
+void ConnDialog::setConnData(const ConnData &c) {
+    setWindowTitle(tr("编辑连接"));
+    nameEdit_->setText(c.connId);
+    int ti = typeCombo_->findText(c.type);
+    if (ti >= 0) typeCombo_->setCurrentIndex(ti);
+    if (c.type == "sqlite") {
+        fileEdit_->setText(c.file);
+    } else {
+        hostEdit_->setText(c.host);
+        if (c.port > 0) portSpin_->setValue(c.port);
+        userEdit_->setText(c.user);
+        pwdEdit_->setText(c.password);
+        dbEdit_->setText(c.database);
+        paramsEdit_->setText(c.params);
+    }
+}
+
 void ConnDialog::testConnection() {
     if (!client_) return;
     auto r = client_->call(build().toTestRequest(), 10000);

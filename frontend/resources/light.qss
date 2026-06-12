@@ -30,8 +30,10 @@ QToolBar#objectToolBar QToolButton:hover { background: #f0fdfa; border-color: #9
 QMenuBar { background: #ffffff; border-bottom: 1px solid #e2e8f0; }
 QMenuBar::item { padding: 6px 10px; background: transparent; }
 QMenuBar::item:selected { background: #f0fdfa; border-radius: 4px; }
-QMenu { background: #ffffff; border: 1px solid #e2e8f0; }
-QMenu::item { padding: 6px 26px; }
+QMenu { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px; }
+/* 左侧 30px 给图标列,图标用 ::icon 定位到文字旁,垂直自动居中 */
+QMenu::item { padding: 6px 24px 6px 28px; border-radius: 4px; }
+QMenu::icon { left: 5px; }
 QMenu::item:selected { background: #f0fdfa; color: #0f766e; }
 QMenu::separator { height: 1px; background: #e2e8f0; margin: 4px 8px; }
 
@@ -45,7 +47,44 @@ QLineEdit, QComboBox, QSpinBox, QPlainTextEdit {
     padding: 4px 8px; selection-background-color: #99f6e4; selection-color: #134e4a;
 }
 QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QPlainTextEdit:focus { border-color: #0d9488; }
-QComboBox::drop-down { border: none; width: 18px; }
+QLineEdit:hover, QComboBox:hover, QSpinBox:hover { border-color: #94a3b8; }
+
+/* 下拉框:扁平细描边 + chevron 箭头 + 扁平弹出列表(参考 Navicat 风格) */
+QComboBox { padding: 4px 26px 4px 8px; min-height: 20px; }
+QComboBox:focus { border-color: #0d9488; }
+QComboBox:on { border-color: #0d9488; }
+QComboBox::drop-down {
+    subcontrol-origin: padding; subcontrol-position: center right;
+    width: 24px; border: none; background: transparent;
+}
+QComboBox::down-arrow { image: url(:/resources/chevron-down.png); width: 16px; height: 16px; }
+QComboBox::down-arrow:on { top: 1px; }
+QComboBox QAbstractItemView {
+    background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px;
+    padding: 4px; outline: 0;
+    selection-background-color: #ccfbf1; selection-color: #134e4a;
+}
+QComboBox QAbstractItemView::item {
+    padding: 5px 10px; min-height: 22px; border-radius: 4px; color: #1e293b;
+}
+QComboBox QAbstractItemView::item:hover { background: #f0fdfa; color: #0f766e; }
+QComboBox QAbstractItemView::item:selected { background: #ccfbf1; color: #134e4a; }
+
+/* 数字输入框:扁平上下小按钮 */
+QSpinBox { padding-right: 22px; }
+QSpinBox::up-button, QSpinBox::down-button {
+    subcontrol-origin: border; width: 18px; border: none;
+    background: transparent; border-left: 1px solid #e2e8f0;
+}
+QSpinBox::up-button { subcontrol-position: top right; border-top-right-radius: 6px; }
+QSpinBox::down-button { subcontrol-position: bottom right; border-bottom-right-radius: 6px; }
+QSpinBox::up-button:hover, QSpinBox::down-button:hover { background: #f0fdfa; }
+QSpinBox::up-arrow {
+    image: url(:/resources/chevron-up.png); width: 12px; height: 12px;
+}
+QSpinBox::down-arrow {
+    image: url(:/resources/chevron-down.png); width: 12px; height: 12px;
+}
 
 QTreeWidget, QTableWidget, QTableView, QTreeView, QListWidget {
     background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px;
@@ -57,6 +96,14 @@ QTreeView::item, QTreeWidget::item { padding: 3px 2px; }
 QTableView::item:selected, QTreeView::item:selected,
 QTableWidget::item:selected, QTreeWidget::item:selected { background: #ccfbf1; color: #134e4a; }
 QTreeView::branch:selected, QTreeWidget::branch:selected { background: #ccfbf1; }
+/* 显式指定展开/折叠箭头:QSS 一旦接管 branch 绘制(如上面的 :selected 背景),
+   匹配状态下默认箭头会消失,导致选中的已展开节点看不出层级 */
+QTreeView::branch:has-children:closed, QTreeWidget::branch:has-children:closed {
+    image: url(:/resources/branch-closed.png);
+}
+QTreeView::branch:has-children:open, QTreeWidget::branch:has-children:open {
+    image: url(:/resources/branch-open.png);
+}
 QHeaderView::section {
     background: #f1f5f9; color: #475569; padding: 6px 8px; border: none;
     border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;

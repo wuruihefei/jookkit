@@ -1,5 +1,11 @@
 <RCC>
     <qresource prefix="/">
         <file>resources/light.qss</file>
+        <file>resources/branch-closed.png</file>
+        <file>resources/branch-open.png</file>
+        <file>resources/chevron-down.png</file>
+        <file>resources/chevron-up.png</file>
+        <file>resources/db-mysql.png</file>
+        <file>resources/db-sqlite.png</file>
     </qresource>
 </RCC>

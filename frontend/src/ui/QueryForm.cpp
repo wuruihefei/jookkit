@@ -66,6 +66,8 @@ QueryForm::QueryForm(BackendClient *client, const QList<ConnData> &conns,
 
     connect(connCombo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &QueryForm::onConnChanged);
+    connect(dbCombo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int){ refreshCompletion(); });
     auto *sc = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_Return), this);
     connect(sc, &QShortcut::activated, this, &QueryForm::run);
 
@@ -97,26 +99,31 @@ void QueryForm::reloadDbList() {
         client_->call(c.toOpenRequest(), 10000);
         r = client_->call(req);
     }
-    dbCombo_->clear();
-    if (r.ok) {
-        for (const auto &d : r.data.value("databases").toArray())
-            dbCombo_->addItem(d.toString());
-    }
-
-    // 刷新补全词(当前库表名)
-    QString db = dbCombo_->currentText();
-    if (!db.isEmpty()) {
-        QJsonObject lt;
-        lt.insert("funcId", FuncId::LIST_TABLES);
-        lt.insert("connId", c.connId);
-        lt.insert("db", db);
-        auto tr2 = client_->call(lt);
-        if (tr2.ok) {
-            QStringList tables;
-            for (const auto &t : tr2.data.value("tables").toArray()) tables << t.toString();
-            editor_->setCompletionWords(tables);
+    {
+        // 重灌列表期间屏蔽信号,避免 clear/addItem 触发多次补全刷新
+        QSignalBlocker block(dbCombo_);
+        dbCombo_->clear();
+        if (r.ok) {
+            for (const auto &d : r.data.value("databases").toArray())
+                dbCombo_->addItem(d.toString());
         }
     }
+    refreshCompletion();
+}
+
+void QueryForm::refreshCompletion() {
+    ConnData c = currentConn();
+    const QString db = dbCombo_->currentText();
+    if (c.connId.isEmpty() || db.isEmpty()) return;
+    QJsonObject lt;
+    lt.insert("funcId", FuncId::LIST_TABLES);
+    lt.insert("connId", c.connId);
+    lt.insert("db", db);
+    auto r = client_->call(lt);
+    if (!r.ok) return;
+    QStringList tables;
+    for (const auto &t : r.data.value("tables").toArray()) tables << t.toString();
+    editor_->setCompletionWords(tables);
 }
 
 void QueryForm::setSql(const QString &sql) { editor_->setPlainText(sql); }

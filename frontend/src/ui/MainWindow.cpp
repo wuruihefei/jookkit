@@ -1,5 +1,6 @@
 #include "ui/MainWindow.h"
 #include "ui/ContentWidget.h"
+#include "ui/ObjectTree.h"
 #include "ui/ConnDialog.h"
 #include "ui/QueryForm.h"
 #include "ui/SqlEditor.h"
@@ -8,6 +9,7 @@
 #include "ui/FindReplaceDialog.h"
 #include "ui/UserManagerDialog.h"
 #include "store/ConnectionStore.h"
+#include "store/FavoriteStore.h"
 #include "backend/BackendProcess.h"
 #include "backend/BackendClient.h"
 
@@ -24,6 +26,11 @@
 #include <QStatusBar>
 #include <QKeySequence>
 #include <QCloseEvent>
+#include <QDialog>
+#include <QListWidget>
+#include <QPushButton>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
 
 MainWindow::MainWindow(const QString &jarPath, QWidget *parent)
     : QMainWindow(parent),
@@ -53,6 +60,12 @@ MainWindow::MainWindow(const QString &jarPath, QWidget *parent)
     // 加载已保存的连接(懒打开)
     for (const ConnData &c : ConnectionStore::load())
         content_->addSavedConnection(c);
+
+    // 树上编辑/复制/删除连接后立即落盘
+    connect(content_->tree(), &ObjectTree::connectionsChanged, this, [this]{
+        ConnectionStore::save(content_->allConnections());
+        statusBar()->showMessage(tr("连接已保存"), 3000);
+    });
 }
 
 void MainWindow::buildToolBar() {
@@ -123,10 +136,10 @@ void MainWindow::buildMenus() {
     tbAct->setCheckable(true); tbAct->setChecked(true);
     connect(tbAct, &QAction::toggled, mainTb_, &QToolBar::setVisible);
 
-    // 收藏
-    QMenu *favMenu = menuBar()->addMenu(tr("收藏(&A)"));
-    disabled(favMenu, tr("收藏当前"));
-    disabled(favMenu, tr("管理收藏..."));
+    // 收藏:打开时动态重建(收藏项直达表数据)
+    favMenu_ = menuBar()->addMenu(tr("收藏(&A)"));
+    connect(favMenu_, &QMenu::aboutToShow, this, &MainWindow::rebuildFavMenu);
+    rebuildFavMenu();
 
     // 工具(数据传输/数据同步/结构同步等未实现功能暂不展示)
     QMenu *toolMenu = menuBar()->addMenu(tr("工具(&T)"));
@@ -151,6 +164,84 @@ void MainWindow::buildMenus() {
     QMenu *helpMenu = menuBar()->addMenu(tr("帮助(&H)"));
     disabled(helpMenu, tr("在线文档"));
     helpMenu->addAction(tr("关于"), this, &MainWindow::about);
+}
+
+void MainWindow::rebuildFavMenu() {
+    favMenu_->clear();
+    QAction *addAct = favMenu_->addAction(Icons::star(), tr("收藏当前表"),
+                                          this, &MainWindow::favoriteCurrent);
+    addAct->setEnabled(!content_->tree()->currentTable().isEmpty());
+    favMenu_->addAction(tr("管理收藏..."), this, &MainWindow::manageFavorites);
+
+    const QList<Favorite> favs = FavoriteStore::load();
+    if (!favs.isEmpty()) favMenu_->addSeparator();
+    for (const Favorite &f : favs) {
+        favMenu_->addAction(Icons::table(), f.display(), this, [this, f]{
+            content_->openTableData(f.connId, f.db, f.table);
+        });
+    }
+}
+
+void MainWindow::favoriteCurrent() {
+    ObjectTree *tree = content_->tree();
+    const QString table = tree->currentTable();
+    if (table.isEmpty()) {
+        QMessageBox::information(this, tr("收藏"), tr("请先在左侧选择一张表"));
+        return;
+    }
+    FavoriteStore::add({tree->currentConnId(), tree->currentDb(), table});
+    statusBar()->showMessage(tr("已收藏 %1").arg(table), 3000);
+}
+
+void MainWindow::manageFavorites() {
+    QDialog dlg(this);
+    dlg.setWindowTitle(tr("管理收藏"));
+    dlg.resize(420, 320);
+
+    auto *list = new QListWidget;
+    auto reload = [list]{
+        list->clear();
+        for (const Favorite &f : FavoriteStore::load()) {
+            auto *it = new QListWidgetItem(Icons::table(), f.display());
+            it->setData(Qt::UserRole, QStringList{f.connId, f.db, f.table});
+            list->addItem(it);
+        }
+    };
+    reload();
+
+    auto *openBtn = new QPushButton(tr("打开"));
+    auto *delBtn = new QPushButton(tr("删除"));
+    auto *closeBtn = new QPushButton(tr("关闭"));
+    auto *btnRow = new QHBoxLayout;
+    btnRow->addWidget(openBtn);
+    btnRow->addWidget(delBtn);
+    btnRow->addStretch();
+    btnRow->addWidget(closeBtn);
+
+    auto *lay = new QVBoxLayout(&dlg);
+    lay->addWidget(list);
+    lay->addLayout(btnRow);
+
+    auto favOf = [](QListWidgetItem *it) {
+        const QStringList v = it->data(Qt::UserRole).toStringList();
+        return Favorite{v.value(0), v.value(1), v.value(2)};
+    };
+    auto openItem = [&](QListWidgetItem *it) {
+        if (!it) return;
+        const Favorite f = favOf(it);
+        content_->openTableData(f.connId, f.db, f.table);
+        dlg.accept();
+    };
+    connect(openBtn, &QPushButton::clicked, &dlg, [&]{ openItem(list->currentItem()); });
+    connect(list, &QListWidget::itemDoubleClicked, &dlg, [&](QListWidgetItem *it){ openItem(it); });
+    connect(delBtn, &QPushButton::clicked, &dlg, [&]{
+        if (QListWidgetItem *it = list->currentItem()) {
+            FavoriteStore::remove(favOf(it));
+            reload();
+        }
+    });
+    connect(closeBtn, &QPushButton::clicked, &dlg, &QDialog::reject);
+    dlg.exec();
 }
 
 void MainWindow::newConnection() {
@@ -230,5 +321,7 @@ void MainWindow::executeSqlFile() {
 void MainWindow::about() {
     QMessageBox::about(this, tr("关于 JookKit"),
         tr("<b>JookKit</b><br>轻量数据库工具(C++/Qt 前端 + Java 后端)。<br>"
-           "支持 MySQL/MariaDB/SQLite。仅供测试验证。"));
+           "支持 MySQL/MariaDB/SQLite。仅供测试验证。<br><br>"
+           "开源仓库: <a href=\"https://github.com/wuruihefei/jookkit\">"
+           "github.com/wuruihefei/jookkit</a> (GPL-3.0)"));
 }

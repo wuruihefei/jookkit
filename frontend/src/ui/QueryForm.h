@@ -36,6 +36,7 @@ private slots:
 private:
     ConnData currentConn() const;
     void reloadDbList();
+    void refreshCompletion();  // 按当前所选库刷新表名补全词
     void runText(const QString &sql);
     void showResult(const QJsonObject &data);
 

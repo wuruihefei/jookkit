@@ -10,7 +10,9 @@ static QString resolveJava() {
     const QString dir = QCoreApplication::applicationDirPath();
     const QStringList cands = {
         dir + "/jre/bin/java.exe",
-        dir + "/jre/bin/java"
+        dir + "/jre/bin/java",
+        dir + "/../Resources/jre/bin/java",            // mac .app 布局(JRE 取 Contents/Home)
+        dir + "/jre/Contents/Home/bin/java"            // mac JRE 原始目录结构兜底
     };
     for (const QString &c : cands)
         if (QFileInfo::exists(c)) return c;

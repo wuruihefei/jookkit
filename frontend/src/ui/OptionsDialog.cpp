@@ -22,9 +22,19 @@ OptionsDialog::OptionsDialog(QWidget *parent) : QDialog(parent) {
     fontSize_->setRange(8, 24);
     fontSize_->setValue(s.value("editor/fontSize", 10).toInt());
 
+    histMaxCount_ = new QSpinBox;
+    histMaxCount_->setRange(0, 100000);
+    histMaxCount_->setValue(s.value("history/maxCount", 1000).toInt());
+
+    histMaxDays_ = new QSpinBox;
+    histMaxDays_->setRange(0, 3650);
+    histMaxDays_->setValue(s.value("history/maxDays", 30).toInt());
+
     auto *form = new QFormLayout;
     form->addRow(tr("默认每页条数:"), pageSize_);
     form->addRow(tr("编辑器字体大小:"), fontSize_);
+    form->addRow(tr("历史保留条数(0=不限):"), histMaxCount_);
+    form->addRow(tr("历史保留天数(0=不限):"), histMaxDays_);
 
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
     connect(buttons, &QDialogButtonBox::accepted, this, &OptionsDialog::apply);
@@ -42,5 +52,7 @@ void OptionsDialog::apply() {
     QSettings s;
     s.setValue("data/pageSize", pageSize_->currentText().toInt());
     s.setValue("editor/fontSize", fontSize_->value());
+    s.setValue("history/maxCount", histMaxCount_->value());
+    s.setValue("history/maxDays", histMaxDays_->value());
     accept();
 }

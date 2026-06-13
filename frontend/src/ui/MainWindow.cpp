@@ -11,6 +11,7 @@
 #include "ui/UserManagerDialog.h"
 #include "store/ConnectionStore.h"
 #include "store/FavoriteStore.h"
+#include "store/HistoryStore.h"
 #include "backend/BackendProcess.h"
 #include "backend/BackendClient.h"
 
@@ -29,6 +30,7 @@
 #include <QKeySequence>
 #include <QCloseEvent>
 #include <QDialog>
+#include <QSettings>
 #include <QListWidget>
 #include <QPushButton>
 #include <QVBoxLayout>
@@ -51,6 +53,13 @@ MainWindow::MainWindow(const QString &jarPath, QWidget *parent)
 
     content_ = new ContentWidget(client_);
     setCentralWidget(content_);
+
+    // Trim history on startup according to user settings
+    {
+        QSettings s;
+        HistoryStore::trim(s.value("history/maxCount", 1000).toInt(),
+                           s.value("history/maxDays", 30).toInt());
+    }
 
     // 提前创建历史 dock，buildMenus() 需要用 histDock_->toggleViewAction()
     historyPane_ = new HistoryPane(this);

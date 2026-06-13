@@ -47,7 +47,9 @@ void HistoryStore::append(const HistoryEntry &e) {
     QFile f(filePath());
     if (!f.open(QIODevice::Append | QIODevice::Text)) return;
     QTextStream ts(&f);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     ts.setCodec("UTF-8");
+#endif
     ts << QString::fromUtf8(QJsonDocument(toObj(e)).toJson(QJsonDocument::Compact))
        << "\n";
 }
@@ -58,7 +60,9 @@ QList<HistoryEntry> HistoryStore::load(int limit) {
     if (!f.open(QIODevice::ReadOnly | QIODevice::Text)) return out;
     QList<HistoryEntry> all;
     QTextStream ts(&f);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     ts.setCodec("UTF-8");
+#endif
     while (!ts.atEnd()) {
         const QString line = ts.readLine().trimmed();
         if (line.isEmpty()) continue;
@@ -83,7 +87,9 @@ void HistoryStore::trim(int maxCount, int maxDays) {
     QList<HistoryEntry> all;
     {
         QTextStream ts(&f);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         ts.setCodec("UTF-8");
+#endif
         while (!ts.atEnd()) {
             const QString line = ts.readLine().trimmed();
             if (line.isEmpty()) continue;
@@ -108,7 +114,9 @@ void HistoryStore::trim(int maxCount, int maxDays) {
 
     if (!f.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) return;
     QTextStream ts(&f);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     ts.setCodec("UTF-8");
+#endif
     for (const HistoryEntry &e : all)
         ts << QString::fromUtf8(QJsonDocument(toObj(e)).toJson(QJsonDocument::Compact))
            << "\n";

@@ -18,6 +18,7 @@ SOURCES += \
     src/ui/ObjectTree.cpp \
     src/ui/ConnDialog.cpp \
     src/ui/QueryForm.cpp \
+    src/ui/GridUtils.cpp \
     src/ui/TableStructureForm.cpp \
     src/ui/TableDataForm.cpp \
     src/ui/InformationPane.cpp \
@@ -44,6 +45,7 @@ HEADERS += \
     src/ui/ObjectTree.h \
     src/ui/ConnDialog.h \
     src/ui/QueryForm.h \
+    src/ui/GridUtils.h \
     src/ui/TableStructureForm.h \
     src/ui/TableDataForm.h \
     src/ui/InformationPane.h \

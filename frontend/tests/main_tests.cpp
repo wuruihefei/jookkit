@@ -2,15 +2,17 @@
 // 增加新测试类时：在此文件中定义类，并在 main() 里追加一行
 //   result |= QTest::qExec(new TstNewClass, argc, argv);
 #include <QtTest>
-#include <QCoreApplication>
+#include <QApplication>
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QTemporaryDir>
+#include <QTableWidget>
 #include "backend/ConnData.h"
 #include "backend/FuncId.h"
 #include "export/Exporter.h"
 #include "store/HistoryStore.h"
+#include "ui/GridUtils.h"
 
 // ── TstConnData ───────────────────────────────────────────────
 class TstConnData : public QObject {
@@ -179,13 +181,39 @@ private slots:
     }
 };
 
+// ── TstGridUtils ──────────────────────────────────────────────
+class TstGridUtils : public QObject {
+    Q_OBJECT
+private slots:
+    void extractVisibleOnly() {
+        QTableWidget t;
+        t.setColumnCount(2);
+        t.setHorizontalHeaderLabels({"id", "name"});
+        t.setRowCount(2);
+        t.setItem(0, 0, new QTableWidgetItem("1"));
+        t.setItem(0, 1, new QTableWidgetItem("Alice"));
+        t.setItem(1, 0, new QTableWidgetItem("2"));
+        t.setItem(1, 1, new QTableWidgetItem("Bob"));
+        t.setRowHidden(1, true);
+
+        QStringList headers;
+        QList<QStringList> rows;
+        GridUtils::extract(&t, true, false, headers, rows);
+        QCOMPARE(headers, QStringList({"id", "name"}));
+        QCOMPARE(rows.size(), 1);
+        QCOMPARE(rows.at(0), QStringList({"1", "Alice"}));
+    }
+};
+
 // ── runner ────────────────────────────────────────────────────
 #include "main_tests.moc"
 
 int main(int argc, char **argv) {
+    QApplication app(argc, argv);
     int result = 0;
     { TstConnData t; result |= QTest::qExec(&t, argc, argv); }
     { TstExporter t; result |= QTest::qExec(&t, argc, argv); }
     { TstHistoryStore t; result |= QTest::qExec(&t, argc, argv); }
+    { TstGridUtils t; result |= QTest::qExec(&t, argc, argv); }
     return result;
 }

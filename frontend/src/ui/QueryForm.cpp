@@ -75,6 +75,7 @@ QueryForm::QueryForm(BackendClient *client, const QList<ConnData> &conns,
     // Right-click context menu on grid
     grid_->setContextMenuPolicy(Qt::ActionsContextMenu);
     auto *expAct = new QAction(tr("导出…"), this);
+    expAct->setToolTip(tr("导出结果（有选区则只导出选中行）"));
     connect(expAct, &QAction::triggered, this, &QueryForm::exportResult);
     grid_->addAction(expAct);
 
@@ -310,15 +311,14 @@ void QueryForm::exportResult() {
 }
 
 void QueryForm::showCellValue(int row, int col) {
-    auto *it = grid_->item(row, col);
-    if (!it) return;
+    const QString text = grid_->item(row, col) ? grid_->item(row, col)->text() : QString();
     QDialog dlg(this);
     dlg.setWindowTitle(tr("单元格内容"));
     dlg.resize(500, 360);
     auto *lay = new QVBoxLayout(&dlg);
     auto *edit = new QPlainTextEdit(&dlg);
     edit->setReadOnly(true);
-    edit->setPlainText(it->text());
+    edit->setPlainText(text);
     lay->addWidget(edit);
     dlg.exec();
 }

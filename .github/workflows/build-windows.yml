@@ -1,4 +1,4 @@
-# Windows x64 自包含包:Qt5(MSVC) 编 exe + windeployqt + 内置 JRE17 + 后端 jar
+# Windows x64 自包含包:Qt6(MSVC) 编 exe + windeployqt + 内置 JRE17 + 后端 jar
 # 触发:手动(workflow_dispatch)或推 v* 标签;产物为 Actions Artifact
 name: build-windows-x64
 
@@ -22,10 +22,10 @@ jobs:
         shell: bash
         run: cd backend && mvn -q package -DskipTests
 
-      - name: 安装 Qt 5.15 (MSVC x64)
+      - name: 安装 Qt 6 (MSVC x64)
         uses: jurplel/install-qt-action@v4
         with:
-          version: '5.15.2'
+          version: '6.7.3'
           arch: win64_msvc2019_64
           cache: true
 

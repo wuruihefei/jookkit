@@ -12,6 +12,16 @@ QString csvField(const QString &v, QChar sep) {
     s.replace("\"", "\"\"");
     return "\"" + s + "\"";
 }
+
+QString quoteIdent(const QString &id, const QString &dbType) {
+    if (dbType == "sqlite")
+        return "\"" + QString(id).replace("\"", "\"\"") + "\"";
+    return "`" + QString(id).replace("`", "``") + "`";   // mysql/默认
+}
+
+QString quoteVal(const QString &v) {
+    return "'" + QString(v).replace("'", "''") + "'";
+}
 }
 
 QByteArray Exporter::toCsv(const QStringList &headers, const QList<QStringList> &rows,
@@ -46,10 +56,28 @@ QByteArray Exporter::toJson(const QStringList &headers, const QList<QStringList>
 QByteArray Exporter::toInsertSql(const QString &table, const QStringList &headers,
                                  const QList<QStringList> &rows,
                                  const QString &dbType, bool batch) {
-    Q_UNUSED(table)
-    Q_UNUSED(headers)
-    Q_UNUSED(rows)
-    Q_UNUSED(dbType)
-    Q_UNUSED(batch)
-    return QByteArray(); // 在 Task 1.3 中实现
+    QStringList cols;
+    for (const QString &h : headers) cols << quoteIdent(h, dbType);
+    const QString tbl = quoteIdent(table, dbType);
+    const QString colClause = "(" + cols.join(", ") + ")";
+
+    auto valuesOf = [](const QStringList &row) {
+        QStringList vs;
+        for (const QString &c : row) vs << quoteVal(c);
+        return "(" + vs.join(", ") + ")";
+    };
+
+    QString out;
+    if (batch) {
+        QStringList tuples;
+        for (const QStringList &row : rows) tuples << valuesOf(row);
+        if (!tuples.isEmpty())
+            out = "INSERT INTO " + tbl + " " + colClause +
+                  " VALUES " + tuples.join(", ") + ";\n";
+    } else {
+        for (const QStringList &row : rows)
+            out += "INSERT INTO " + tbl + " " + colClause +
+                   " VALUES " + valuesOf(row) + ";\n";
+    }
+    return out.toUtf8();
 }

@@ -42,6 +42,23 @@ private slots:
         QCOMPARE(arr.at(0).toObject().value("id").toString(), QString("1"));
         QCOMPARE(arr.at(0).toObject().value("name").toString(), QString("Alice"));
     }
+
+    void insertMysqlPerRow() {
+        QStringList headers{"id", "name"};
+        QList<QStringList> rows{{"1", "A'B"}, {"2", "C"}};
+        QByteArray out = Exporter::toInsertSql("t", headers, rows, "mysql", false);
+        QCOMPARE(QString::fromUtf8(out),
+            QString("INSERT INTO `t` (`id`, `name`) VALUES ('1', 'A''B');\n"
+                    "INSERT INTO `t` (`id`, `name`) VALUES ('2', 'C');\n"));
+    }
+
+    void insertSqliteBatch() {
+        QStringList headers{"id"};
+        QList<QStringList> rows{{"1"}, {"2"}};
+        QByteArray out = Exporter::toInsertSql("t", headers, rows, "sqlite", true);
+        QCOMPARE(QString::fromUtf8(out),
+            QString("INSERT INTO \"t\" (\"id\") VALUES ('1'), ('2');\n"));
+    }
 };
 
 #include "tst_exporter.moc"

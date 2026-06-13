@@ -1,0 +1,76 @@
+# Windows x64 自包含包:Qt5(MSVC) 编 exe + windeployqt + 内置 JRE17 + 后端 jar
+# 触发:手动(workflow_dispatch)或推 v* 标签;产物为 Actions Artifact
+name: build-windows-x64
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: 构建后端 fat jar
+        shell: bash
+        run: cd backend && mvn -q package -DskipTests
+
+      - name: 安装 Qt 5.15 (MSVC x64)
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '5.15.2'
+          arch: win64_msvc2019_64
+          cache: true
+
+      - name: MSVC 编译环境
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: 编译前端 release
+        shell: cmd
+        run: |
+          cd frontend
+          qmake jookkit.pro "CONFIG+=release"
+          nmake
+
+      - name: 组装自包含包 + zip
+        shell: bash
+        run: |
+          cd frontend
+          mkdir -p dist-ci/JookKit/backend
+          # release 产物可能在 release\ 或当前目录
+          cp release/jookkit.exe dist-ci/JookKit/ 2>/dev/null || cp jookkit.exe dist-ci/JookKit/
+          cp ../backend/target/jookkit-backend.jar dist-ci/JookKit/backend/
+
+          # Qt 运行时 DLL(含 MSVC 运行库)
+          windeployqt --release --no-translations --compiler-runtime dist-ci/JookKit/jookkit.exe
+
+          # 内置 x64 JRE17
+          curl -sL -o jre.zip \
+            "https://api.adoptium.net/v3/binary/latest/17/ga/windows/x64/jre/hotspot/normal/eclipse"
+          7z x -y -ojreroot jre.zip > /dev/null
+          JRE_DIR=$(ls -d jreroot/*/ | head -1)
+          cp -r "$JRE_DIR" dist-ci/JookKit/jre
+
+          {
+            echo 'JookKit (Windows x64) —— 双击 jookkit.exe 即可,无需安装 Java(已内置 jre\)。'
+            echo '新建连接:SQLite 选文件;MySQL 填连接信息,"参数"默认'
+            echo 'useSSL=false&allowPublicKeyRetrieval=true(MySQL8 认证需要),'
+            echo '需要时区再加 &serverTimezone=GMT%2B8。'
+            echo '仅供测试验证。'
+          } > dist-ci/JookKit/使用说明.txt
+
+          cd dist-ci && 7z a -tzip JookKit-win-x64.zip JookKit > /dev/null
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: JookKit-win-x64
+          path: frontend/dist-ci/JookKit-win-x64.zip

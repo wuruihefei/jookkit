@@ -183,6 +183,7 @@ void QueryForm::runText(const QString &text) {
         req.insert("funcId", FuncId::EXEC_SQL);
         req.insert("connId", connId);
         req.insert("sql", sql);
+        client_->setHistoryContext(connId, db);
         auto r = client_->call(req);
         if (!r.ok) {
             status_->setText(tr("错误[第%1条]: %2").arg(execCount + 1).arg(r.errorMessage));

@@ -30,6 +30,8 @@ SOURCES += \
     src/sql/SqlFormat.cpp \
     src/store/ConnectionStore.cpp \
     src/store/FavoriteStore.cpp \
+    src/store/HistoryStore.cpp \
+    src/export/Exporter.cpp \
     src/backend/ConnData.cpp \
     src/backend/BackendProcess.cpp \
     src/backend/BackendClient.cpp
@@ -53,6 +55,8 @@ HEADERS += \
     src/sql/SqlFormat.h \
     src/store/ConnectionStore.h \
     src/store/FavoriteStore.h \
+    src/store/HistoryStore.h \
+    src/export/Exporter.h \
     src/backend/ConnData.h \
     src/backend/BackendProcess.h \
     src/backend/BackendClient.h \

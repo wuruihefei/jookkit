@@ -20,6 +20,7 @@ public:
 
     explicit BackendClient(QObject *parent = nullptr);
     void setPort(int port);
+    void setHistoryContext(const QString &connId, const QString &db);
 
     /** 阻塞式调用 /rpc,超时返回 transportFailed。 */
     Result call(const QJsonObject &request, int timeoutMs = 30000);
@@ -27,6 +28,8 @@ public:
 private:
     QNetworkAccessManager *nam;
     int port_ = 0;
+    QString histConnId_;
+    QString histDb_;
 };
 
 #endif

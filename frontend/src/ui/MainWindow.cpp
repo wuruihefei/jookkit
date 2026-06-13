@@ -1,5 +1,6 @@
 #include "ui/MainWindow.h"
 #include "ui/ContentWidget.h"
+#include "ui/HistoryPane.h"
 #include "ui/ObjectTree.h"
 #include "ui/ConnDialog.h"
 #include "ui/QueryForm.h"
@@ -16,6 +17,7 @@
 #include <QToolBar>
 #include <QMenuBar>
 #include <QMenu>
+#include <QDockWidget>
 #include <QAction>
 #include <QApplication>
 #include <QPlainTextEdit>
@@ -50,8 +52,18 @@ MainWindow::MainWindow(const QString &jarPath, QWidget *parent)
     content_ = new ContentWidget(client_);
     setCentralWidget(content_);
 
+    // 提前创建历史 dock，buildMenus() 需要用 histDock_->toggleViewAction()
+    historyPane_ = new HistoryPane(this);
+    histDock_ = new QDockWidget(tr("SQL 历史"), this);
+    histDock_->setObjectName("historyDock");
+    histDock_->setWidget(historyPane_);
+
     buildToolBar();
     buildMenus();
+
+    // dock 注册到主窗口，默认隐藏
+    addDockWidget(Qt::RightDockWidgetArea, histDock_);
+    histDock_->hide();
 
     statusBar()->showMessage(proc_->isRunning()
         ? tr("后端已就绪 (端口 %1)").arg(proc_->port())
@@ -65,6 +77,17 @@ MainWindow::MainWindow(const QString &jarPath, QWidget *parent)
     connect(content_->tree(), &ObjectTree::connectionsChanged, this, [this]{
         ConnectionStore::save(content_->allConnections());
         statusBar()->showMessage(tr("连接已保存"), 3000);
+    });
+
+    // 显示时刷新历史列表
+    connect(histDock_, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+        if (visible && historyPane_) historyPane_->refresh();
+    });
+
+    // 双击/右键"送回编辑器"：新开查询标签并填入 SQL
+    connect(historyPane_, &HistoryPane::sqlChosen, this, [this](const QString &sql) {
+        content_->newQuery();
+        if (auto *q = content_->currentQueryForm()) q->setSql(sql);
     });
 }
 
@@ -135,6 +158,8 @@ void MainWindow::buildMenus() {
     QAction *tbAct = viewMenu->addAction(tr("主工具栏"));
     tbAct->setCheckable(true); tbAct->setChecked(true);
     connect(tbAct, &QAction::toggled, mainTb_, &QToolBar::setVisible);
+    viewMenu->addSeparator();
+    viewMenu->addAction(histDock_->toggleViewAction());
 
     // 收藏:打开时动态重建(收藏项直达表数据)
     favMenu_ = menuBar()->addMenu(tr("收藏(&A)"));

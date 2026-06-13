@@ -13,6 +13,7 @@ RESOURCES += resources.qrc
 SOURCES += \
     src/main.cpp \
     src/ui/MainWindow.cpp \
+    src/ui/HistoryPane.cpp \
     src/ui/ContentWidget.cpp \
     src/ui/ObjectTree.cpp \
     src/ui/ConnDialog.cpp \
@@ -38,6 +39,7 @@ SOURCES += \
 
 HEADERS += \
     src/ui/MainWindow.h \
+    src/ui/HistoryPane.h \
     src/ui/ContentWidget.h \
     src/ui/ObjectTree.h \
     src/ui/ConnDialog.h \

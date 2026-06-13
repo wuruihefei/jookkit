@@ -39,6 +39,11 @@ BackendClient::Result BackendClient::call(const QJsonObject &request, int timeou
         // skip internal USE statements (database switch, not user SQL)
         const QString _sql = request.value("sql").toString();
         if (_sql.trimmed().startsWith("USE ", Qt::CaseInsensitive)) return;
+        // Skip sensitive statements containing credentials
+        if (_sql.contains("IDENTIFIED", Qt::CaseInsensitive) ||
+            _sql.contains("PASSWORD", Qt::CaseInsensitive)) return;
+        // Skip internal system queries (information_schema, pagination)
+        if (_sql.contains("information_schema", Qt::CaseInsensitive)) return;
         HistoryEntry _h;
         // SQL text: use "sql" field for EXEC_SQL; synthesize for DML operations
         _h.sql = request.value("sql").toString();

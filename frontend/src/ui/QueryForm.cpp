@@ -58,6 +58,7 @@ QueryForm::QueryForm(BackendClient *client, const QList<ConnData> &conns,
 
     editor_ = new SqlEditor;
     grid_ = new QTableWidget;
+    grid_->setEditTriggers(QAbstractItemView::NoEditTriggers);
     grid_->horizontalHeader()->setStretchLastSection(true);
     grid_->setSortingEnabled(true);
     status_ = new QLabel(tr("就绪"));

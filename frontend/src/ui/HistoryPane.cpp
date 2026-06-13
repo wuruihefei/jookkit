@@ -19,7 +19,6 @@ HistoryPane::HistoryPane(QWidget *parent) : QWidget(parent) {
     lay->addWidget(list_);
 
     connect(search_, &QLineEdit::textChanged, this, &HistoryPane::applyFilter);
-    connect(list_, &QListWidget::itemActivated, this, &HistoryPane::onItemActivated);
     connect(list_, &QListWidget::itemDoubleClicked, this, &HistoryPane::onItemActivated);
     connect(list_, &QListWidget::customContextMenuRequested, this, &HistoryPane::showMenu);
 

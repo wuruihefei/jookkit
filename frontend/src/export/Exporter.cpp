@@ -61,9 +61,10 @@ QByteArray Exporter::toInsertSql(const QString &table, const QStringList &header
     const QString tbl = quoteIdent(table, dbType);
     const QString colClause = "(" + cols.join(", ") + ")";
 
-    auto valuesOf = [](const QStringList &row) {
+    auto valuesOf = [&headers](const QStringList &row) {
         QStringList vs;
-        for (const QString &c : row) vs << quoteVal(c);
+        for (int j = 0; j < headers.size(); ++j)
+            vs << quoteVal(j < row.size() ? row.at(j) : QString());
         return "(" + vs.join(", ") + ")";
     };
 

@@ -1,5 +1,6 @@
 // 统一测试 main：依次运行所有测试类，汇总退出码。
-// 增加新测试类时：在此文件中定义类并加入 runAll()。
+// 增加新测试类时：在此文件中定义类，并在 main() 里追加一行
+//   result |= QTest::qExec(new TstNewClass, argc, argv);
 #include <QtTest>
 #include <QCoreApplication>
 #include <QJsonDocument>
@@ -106,6 +107,15 @@ private slots:
         QByteArray out = Exporter::toInsertSql("t", headers, rows, "sqlite", true);
         QCOMPARE(QString::fromUtf8(out),
             QString("INSERT INTO \"t\" (\"id\") VALUES ('1'), ('2');\n"));
+    }
+
+    void insertShortRow() {
+        QStringList headers{"id", "name", "age"};
+        QList<QStringList> rows{{"1", "Alice"}};  // missing "age" column
+        QByteArray out = Exporter::toInsertSql("t", headers, rows, "mysql", false);
+        // Should produce 3 values, not 2
+        QCOMPARE(QString::fromUtf8(out),
+            QString("INSERT INTO `t` (`id`, `name`, `age`) VALUES ('1', 'Alice', '');\n"));
     }
 };
 

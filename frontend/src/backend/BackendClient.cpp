@@ -36,6 +36,9 @@ BackendClient::Result BackendClient::call(const QJsonObject &request, int timeou
 
     auto _recordHistory = [&](const Result &r) {
         if (!_isExecClass) return;
+        // skip internal USE statements (database switch, not user SQL)
+        const QString _sql = request.value("sql").toString();
+        if (_sql.trimmed().startsWith("USE ", Qt::CaseInsensitive)) return;
         HistoryEntry _h;
         // SQL text: use "sql" field for EXEC_SQL; synthesize for DML operations
         _h.sql = request.value("sql").toString();

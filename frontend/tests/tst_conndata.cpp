@@ -44,5 +44,4 @@ private slots:
     }
 };
 
-QTEST_MAIN(TstConnData)
 #include "tst_conndata.moc"

@@ -6,13 +6,15 @@ TARGET = tst_jookkit
 INCLUDEPATH += src
 
 SOURCES += \
-    tests/tst_conndata.cpp \
+    tests/main_tests.cpp \
     src/backend/ConnData.cpp \
     src/backend/BackendClient.cpp \
-    src/backend/BackendProcess.cpp
+    src/backend/BackendProcess.cpp \
+    src/export/Exporter.cpp
 
 HEADERS += \
     src/backend/ConnData.h \
     src/backend/BackendClient.h \
     src/backend/BackendProcess.h \
-    src/backend/FuncId.h
+    src/backend/FuncId.h \
+    src/export/Exporter.h

@@ -6,9 +6,11 @@
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QTemporaryDir>
 #include "backend/ConnData.h"
 #include "backend/FuncId.h"
 #include "export/Exporter.h"
+#include "store/HistoryStore.h"
 
 // ── TstConnData ───────────────────────────────────────────────
 class TstConnData : public QObject {
@@ -119,6 +121,64 @@ private slots:
     }
 };
 
+// ── TstHistoryStore ───────────────────────────────────────────
+class TstHistoryStore : public QObject {
+    Q_OBJECT
+private slots:
+    void init() {
+        QStandardPaths::setTestModeEnabled(true);
+        HistoryStore::clear();
+    }
+
+    void appendAndLoad() {
+        HistoryEntry e;
+        e.sql = "SELECT 1"; e.connId = "c1"; e.db = "d1";
+        e.ts = 1000; e.elapsedMs = 5; e.rows = 1; e.ok = true;
+        HistoryStore::append(e);
+
+        QList<HistoryEntry> all = HistoryStore::load(100);
+        QCOMPARE(all.size(), 1);
+        QCOMPARE(all.at(0).sql, QString("SELECT 1"));
+        QCOMPARE(all.at(0).rows, 1);
+        QCOMPARE(all.at(0).ok, true);
+    }
+
+    void loadNewestFirst() {
+        HistoryEntry a; a.sql = "A"; a.ts = 1;
+        HistoryEntry b; b.sql = "B"; b.ts = 2;
+        HistoryStore::append(a);
+        HistoryStore::append(b);
+        QList<HistoryEntry> all = HistoryStore::load(100);
+        QCOMPARE(all.size(), 2);
+        QCOMPARE(all.at(0).sql, QString("B"));  // newest first
+        QCOMPARE(all.at(1).sql, QString("A"));
+    }
+
+    void trimByCount() {
+        for (int i = 0; i < 5; ++i) {
+            HistoryEntry e; e.sql = QString::number(i); e.ts = i;
+            HistoryStore::append(e);
+        }
+        HistoryStore::trim(3, 0);
+        QList<HistoryEntry> all = HistoryStore::load(100);
+        QCOMPARE(all.size(), 3);
+        QCOMPARE(all.at(0).sql, QString("4"));  // newest
+        QCOMPARE(all.at(2).sql, QString("2"));
+    }
+
+    void trimByDays() {
+        HistoryEntry oldE; oldE.sql = "old"; oldE.ts = 1;  // epoch 1ms = Jan 1 1970
+        HistoryEntry newE; newE.sql = "new";
+        newE.ts = QDateTime::currentMSecsSinceEpoch();
+        HistoryStore::append(oldE);
+        HistoryStore::append(newE);
+        HistoryStore::trim(1000, 30);
+        QList<HistoryEntry> all = HistoryStore::load(100);
+        QCOMPARE(all.size(), 1);
+        QCOMPARE(all.at(0).sql, QString("new"));
+    }
+};
+
 // ── runner ────────────────────────────────────────────────────
 #include "main_tests.moc"
 
@@ -126,5 +186,6 @@ int main(int argc, char **argv) {
     int result = 0;
     { TstConnData t; result |= QTest::qExec(&t, argc, argv); }
     { TstExporter t; result |= QTest::qExec(&t, argc, argv); }
+    { TstHistoryStore t; result |= QTest::qExec(&t, argc, argv); }
     return result;
 }

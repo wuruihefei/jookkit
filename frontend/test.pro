@@ -17,4 +17,8 @@ HEADERS += \
     src/backend/BackendClient.h \
     src/backend/BackendProcess.h \
     src/backend/FuncId.h \
-    src/export/Exporter.h
+    src/export/Exporter.h \
+    src/store/HistoryStore.h
+
+SOURCES += \
+    src/store/HistoryStore.cpp

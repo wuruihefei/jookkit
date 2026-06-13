@@ -11,6 +11,7 @@
 #include <QLabel>
 #include <QToolBar>
 #include <QComboBox>
+#include <QLineEdit>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QSplitter>
@@ -22,6 +23,14 @@
 #include <QTextStream>
 #include <QFile>
 #include <QTextCursor>
+#include <QMessageBox>
+#include <QApplication>
+#include <QClipboard>
+#include <QDialog>
+#include <QPlainTextEdit>
+#include <QAction>
+#include "ui/GridUtils.h"
+#include "export/Exporter.h"
 
 QueryForm::QueryForm(BackendClient *client, const QList<ConnData> &conns,
                      const QString &initialConnId, const QString &initialDb, QWidget *parent)
@@ -50,7 +59,27 @@ QueryForm::QueryForm(BackendClient *client, const QList<ConnData> &conns,
     editor_ = new SqlEditor;
     grid_ = new QTableWidget;
     grid_->horizontalHeader()->setStretchLastSection(true);
+    grid_->setSortingEnabled(true);
     status_ = new QLabel(tr("就绪"));
+
+    filterEdit_ = new QLineEdit(this);
+    filterEdit_->setPlaceholderText(tr("筛选当前结果(仅当前已加载数据)…"));
+    connect(filterEdit_, &QLineEdit::textChanged, this, &QueryForm::applyGridFilter);
+
+    // Copy selection as TSV (Ctrl+C)
+    auto *copyAct = new QAction(this);
+    copyAct->setShortcut(QKeySequence::Copy);
+    connect(copyAct, &QAction::triggered, this, &QueryForm::copySelection);
+    grid_->addAction(copyAct);
+
+    // Right-click context menu on grid
+    grid_->setContextMenuPolicy(Qt::ActionsContextMenu);
+    auto *expAct = new QAction(tr("导出…"), this);
+    connect(expAct, &QAction::triggered, this, &QueryForm::exportResult);
+    grid_->addAction(expAct);
+
+    // Double-click: show full cell value
+    connect(grid_, &QTableWidget::cellDoubleClicked, this, &QueryForm::showCellValue);
 
     auto *split = new QSplitter(Qt::Vertical);
     split->addWidget(editor_);
@@ -62,6 +91,7 @@ QueryForm::QueryForm(BackendClient *client, const QList<ConnData> &conns,
     layout->setContentsMargins(0, 0, 0, 0);
     layout->addWidget(topBar);
     layout->addWidget(split, 1);
+    layout->addWidget(filterEdit_);
     layout->addWidget(status_);
 
     connect(connCombo_, QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -209,7 +239,9 @@ void QueryForm::runText(const QString &text) {
 void QueryForm::showResult(const QJsonObject &data) {
     QJsonArray cols = data.value("columns").toArray();
     QJsonArray rows = data.value("rows").toArray();
+    grid_->setSortingEnabled(false);
     grid_->clear();
+    if (filterEdit_) filterEdit_->clear();
     grid_->setColumnCount(cols.size());
     QStringList headers;
     for (const auto &c : cols) headers << c.toObject().value("name").toString();
@@ -223,4 +255,70 @@ void QueryForm::showResult(const QJsonObject &data) {
                 v.isNull() ? QStringLiteral("(null)") : v.toVariant().toString()));
         }
     }
+    grid_->setSortingEnabled(true);
+}
+
+void QueryForm::applyGridFilter(const QString &text) {
+    for (int i = 0; i < grid_->rowCount(); ++i) {
+        bool match = text.isEmpty();
+        for (int j = 0; !match && j < grid_->columnCount(); ++j) {
+            auto *it = grid_->item(i, j);
+            if (it && it->text().contains(text, Qt::CaseInsensitive)) match = true;
+        }
+        grid_->setRowHidden(i, !match);
+    }
+}
+
+void QueryForm::copySelection() {
+    const bool hasSelection = !grid_->selectedRanges().isEmpty();
+    QStringList headers; QList<QStringList> rows;
+    GridUtils::extract(grid_, true, hasSelection, headers, rows);
+    QByteArray tsv = Exporter::toCsv(headers, rows, '\t', true, false);
+    QApplication::clipboard()->setText(QString::fromUtf8(tsv));
+}
+
+void QueryForm::exportResult() {
+    if (grid_->rowCount() == 0) {
+        QMessageBox::information(this, tr("导出"), tr("没有可导出的数据。"));
+        return;
+    }
+    const QString path = QFileDialog::getSaveFileName(
+        this, tr("导出结果"), QString(),
+        "CSV (*.csv);;JSON (*.json);;SQL INSERT (*.sql)");
+    if (path.isEmpty()) return;
+
+    const bool hasSelection = !grid_->selectedRanges().isEmpty();
+    QStringList headers; QList<QStringList> rows;
+    GridUtils::extract(grid_, true, hasSelection, headers, rows);
+
+    QByteArray bytes;
+    if (path.endsWith(".json", Qt::CaseInsensitive))
+        bytes = Exporter::toJson(headers, rows);
+    else if (path.endsWith(".sql", Qt::CaseInsensitive))
+        bytes = Exporter::toInsertSql("exported_table", headers, rows, QString(), true);
+    else
+        bytes = Exporter::toCsv(headers, rows, ',', true, true);  // UTF-8 BOM for Excel
+
+    QFile f(path);
+    if (!f.open(QIODevice::WriteOnly)) {
+        QMessageBox::warning(this, tr("导出"), tr("无法写入文件:\n") + path);
+        return;
+    }
+    f.write(bytes);
+    QMessageBox::information(this, tr("导出"),
+        QString(tr("已导出 %1 行到\n%2")).arg(rows.size()).arg(path));
+}
+
+void QueryForm::showCellValue(int row, int col) {
+    auto *it = grid_->item(row, col);
+    if (!it) return;
+    QDialog dlg(this);
+    dlg.setWindowTitle(tr("单元格内容"));
+    dlg.resize(500, 360);
+    auto *lay = new QVBoxLayout(&dlg);
+    auto *edit = new QPlainTextEdit(&dlg);
+    edit->setReadOnly(true);
+    edit->setPlainText(it->text());
+    lay->addWidget(edit);
+    dlg.exec();
 }

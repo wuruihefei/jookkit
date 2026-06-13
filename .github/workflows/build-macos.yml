@@ -54,13 +54,13 @@ jobs:
           # ad-hoc 签名:arm64 macOS 拒绝运行完全未签名的二进制
           codesign --force --deep -s - "$APP"
 
-          cat > 使用说明.txt <<'EOF'
-JookKit (macOS Apple Silicon) —— 已内置 Java 运行时,无需安装 Java。
-首次打开:本应用未经 Apple 公证,直接双击会被拦截。
-  方法一:右键点击 jookkit.app → 打开 → 再点"打开"。
-  方法二:终端执行  xattr -cr jookkit.app  后正常双击。
-仅供测试验证。
-EOF
+          {
+            echo 'JookKit (macOS Apple Silicon) —— 已内置 Java 运行时,无需安装 Java。'
+            echo '首次打开:本应用未经 Apple 公证,直接双击会被拦截。'
+            echo '  方法一:右键点击 jookkit.app → 打开 → 再点"打开"。'
+            echo '  方法二:终端执行  xattr -cr jookkit.app  后正常双击。'
+            echo '仅供测试验证。'
+          } > 使用说明.txt
           mkdir -p dist-mac/JookKit
           cp -R "$APP" 使用说明.txt dist-mac/JookKit/
           cd dist-mac && ditto -c -k --keepParent JookKit JookKit-mac-arm64.zip

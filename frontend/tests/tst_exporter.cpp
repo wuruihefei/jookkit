@@ -30,6 +30,18 @@ private slots:
         QByteArray out = Exporter::toCsv(headers, rows, '\t', false, false);
         QCOMPARE(QString::fromUtf8(out), QString("1\r\n"));
     }
+
+    void jsonBasic() {
+        QStringList headers{"id", "name"};
+        QList<QStringList> rows{{"1", "Alice"}};
+        QByteArray out = Exporter::toJson(headers, rows);
+        QJsonDocument doc = QJsonDocument::fromJson(out);
+        QVERIFY(doc.isArray());
+        QJsonArray arr = doc.array();
+        QCOMPARE(arr.size(), 1);
+        QCOMPARE(arr.at(0).toObject().value("id").toString(), QString("1"));
+        QCOMPARE(arr.at(0).toObject().value("name").toString(), QString("Alice"));
+    }
 };
 
 #include "tst_exporter.moc"

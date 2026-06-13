@@ -2,6 +2,9 @@
 // 增加新测试类时：在此文件中定义类并加入 runAll()。
 #include <QtTest>
 #include <QCoreApplication>
+#include <QJsonDocument>
+#include <QJsonArray>
+#include <QJsonObject>
 #include "backend/ConnData.h"
 #include "backend/FuncId.h"
 #include "export/Exporter.h"
@@ -74,6 +77,18 @@ private slots:
         QList<QStringList> rows{{"1"}};
         QByteArray out = Exporter::toCsv(headers, rows, '\t', false, false);
         QCOMPARE(QString::fromUtf8(out), QString("1\r\n"));
+    }
+
+    void jsonBasic() {
+        QStringList headers{"id", "name"};
+        QList<QStringList> rows{{"1", "Alice"}};
+        QByteArray out = Exporter::toJson(headers, rows);
+        QJsonDocument doc = QJsonDocument::fromJson(out);
+        QVERIFY(doc.isArray());
+        QJsonArray arr = doc.array();
+        QCOMPARE(arr.size(), 1);
+        QCOMPARE(arr.at(0).toObject().value("id").toString(), QString("1"));
+        QCOMPARE(arr.at(0).toObject().value("name").toString(), QString("Alice"));
     }
 };
 

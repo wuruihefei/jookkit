@@ -75,7 +75,7 @@ JOOKKIT_JAR=../backend/target/jookkit-backend.jar QT_QPA_PLATFORM=offscreen ./ts
 
 两种方式（详见 [frontend/WINDOWS.md](frontend/WINDOWS.md)）：
 
-1. **Windows 原生构建**：在 Qt 5.15 (MinGW 64-bit) 命令行中运行 `frontend\pack_windows.bat`，自动完成「后端 jar 构建 → qmake/mingw32-make 编 release → windeployqt 收集 DLL → 打 zip」，产物 `frontend\dist\JookKit-win.zip`（目标机需安装 Java 17）。
+1. **Windows 原生构建**：在 Qt 5.15 (MinGW 64-bit) 命令行中运行 `frontend\pack_windows.bat`，自动完成「后端 jar 构建 → qmake/mingw32-make 编 release → windeployqt 收集 DLL → 打 zip → 部署到 `D:\dev\JookKit`」，产物 `frontend\dist\JookKit-win.zip`（目标机需安装 Java 17）。部署前需关闭正在运行的 jookkit.exe，否则该步自动跳过。
 2. **Linux 交叉编译**：基于 MXE Qt5 的 Docker 交叉编译，运行 `frontend/docker/pack-cross.sh`，产出自包含 zip（exe + Qt DLL + 内置 JRE + 后端 jar），目标机免装 Java。
 
 ## 开源协议

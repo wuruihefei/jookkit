@@ -11,7 +11,8 @@ SOURCES += \
     src/backend/BackendClient.cpp \
     src/backend/BackendProcess.cpp \
     src/export/Exporter.cpp \
-    src/ui/GridUtils.cpp
+    src/ui/GridUtils.cpp \
+    src/import/CsvReader.cpp
 
 HEADERS += \
     src/backend/ConnData.h \
@@ -20,7 +21,8 @@ HEADERS += \
     src/backend/FuncId.h \
     src/export/Exporter.h \
     src/store/HistoryStore.h \
-    src/ui/GridUtils.h
+    src/ui/GridUtils.h \
+    src/import/CsvReader.h
 
 SOURCES += \
     src/store/HistoryStore.cpp

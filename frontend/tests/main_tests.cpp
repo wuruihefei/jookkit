@@ -8,11 +8,13 @@
 #include <QJsonObject>
 #include <QTemporaryDir>
 #include <QTableWidget>
+#include <QTextCodec>
 #include "backend/ConnData.h"
 #include "backend/FuncId.h"
 #include "export/Exporter.h"
 #include "store/HistoryStore.h"
 #include "ui/GridUtils.h"
+#include "import/CsvReader.h"
 
 // ── TstConnData ───────────────────────────────────────────────
 class TstConnData : public QObject {
@@ -143,6 +145,109 @@ private slots:
     }
 };
 
+// ── TstCsvReader ──────────────────────────────────────────────
+class TstCsvReader : public QObject {
+    Q_OBJECT
+private slots:
+    void basicHeaderAndRows() {
+        QByteArray b = "id,name\r\n1,Alice\r\n2,Bob\r\n";
+        ParseResult r = CsvReader::read(b, CsvOptions{});
+        QVERIFY(r.ok);
+        QCOMPARE(r.headers, QStringList({"id", "name"}));
+        QCOMPARE(r.rows.size(), 2);
+        QCOMPARE(r.rows.at(0), QStringList({"1", "Alice"}));
+        QCOMPARE(r.rows.at(1), QStringList({"2", "Bob"}));
+    }
+
+    // 未加引号的空字段 → null;加引号的空字段 "" → 非 null 空串
+    void emptyFieldIsNullQuotedEmptyIsNot() {
+        QByteArray b = "a,b,c\n1,,3\n";
+        ParseResult r = CsvReader::read(b, CsvOptions{});
+        QVERIFY(r.ok);
+        QCOMPARE(r.rows.at(0).size(), 3);
+        QCOMPARE(r.rows.at(0).at(0), QString("1"));
+        QVERIFY(r.rows.at(0).at(1).isNull());          // 空字段 = NULL
+        QCOMPARE(r.rows.at(0).at(2), QString("3"));
+
+        QByteArray b2 = "a,b\n\"\",x\n";                // 第一格是加引号空串
+        ParseResult r2 = CsvReader::read(b2, CsvOptions{});
+        QVERIFY(r2.rows.at(0).at(0).isEmpty());
+        QVERIFY(!r2.rows.at(0).at(0).isNull());         // 引号空 = 空串非 NULL
+        QCOMPARE(r2.rows.at(0).at(1), QString("x"));
+    }
+
+    void quotedCommaAndEscapedQuote() {
+        QByteArray b = "h1,h2\n\"a,b\",\"c\"\"d\"\n";
+        ParseResult r = CsvReader::read(b, CsvOptions{});
+        QVERIFY(r.ok);
+        QCOMPARE(r.rows.at(0).at(0), QString("a,b"));
+        QCOMPARE(r.rows.at(0).at(1), QString("c\"d"));
+    }
+
+    void quotedEmbeddedNewline() {
+        QByteArray b = "h\n\"line1\nline2\"\nr2\n";
+        ParseResult r = CsvReader::read(b, CsvOptions{});
+        QVERIFY(r.ok);
+        QCOMPARE(r.rows.size(), 2);
+        QCOMPARE(r.rows.at(0).at(0), QString("line1\nline2"));
+        QCOMPARE(r.rows.at(1).at(0), QString("r2"));
+    }
+
+    void noHeader() {
+        QByteArray b = "1,Alice\n2,Bob\n";
+        CsvOptions o; o.firstRowHeader = false;
+        ParseResult r = CsvReader::read(b, o);
+        QVERIFY(r.headers.isEmpty());
+        QCOMPARE(r.rows.size(), 2);
+        QCOMPARE(r.rows.at(0), QStringList({"1", "Alice"}));
+    }
+
+    // sourceLines:记录起始物理行;字段内换行不增加“记录”但占物理行
+    void sourceLineTracking() {
+        QByteArray b = "h\n\"a\nb\"\nr2\n";
+        ParseResult r = CsvReader::read(b, CsvOptions{});
+        QCOMPARE(r.sourceLines.size(), 2);
+        QCOMPARE(r.sourceLines.at(0), 2);   // 记录1从第2行开始(跨2-3行)
+        QCOMPARE(r.sourceLines.at(1), 4);   // 记录2在第4行
+    }
+
+    void forcedGbk() {
+        QTextCodec *gbk = QTextCodec::codecForName("GBK");
+        QVERIFY(gbk != nullptr);
+        QByteArray b = gbk->fromUnicode(QString::fromUtf8("名,值\n张三,1\n"));
+        CsvOptions o; o.forcedCodec = "GBK";
+        ParseResult r = CsvReader::read(b, o);
+        QVERIFY(r.ok);
+        QCOMPARE(r.detectedCodec, QString("GBK"));
+        QCOMPARE(r.headers, QStringList({QString::fromUtf8("名"), QString::fromUtf8("值")}));
+        QCOMPARE(r.rows.at(0), QStringList({QString::fromUtf8("张三"), "1"}));
+    }
+
+    void autoDetectUtf8Bom() {
+        QByteArray b = QByteArray("\xEF\xBB\xBF") + QString::fromUtf8("名,值\n张三,1\n").toUtf8();
+        ParseResult r = CsvReader::read(b, CsvOptions{});
+        QVERIFY(r.ok);
+        QCOMPARE(r.detectedCodec, QString("UTF-8"));
+        QCOMPARE(r.headers, QStringList({QString::fromUtf8("名"), QString::fromUtf8("值")}));
+    }
+
+    void autoDetectGbkFallback() {
+        QTextCodec *gbk = QTextCodec::codecForName("GBK");
+        QByteArray b = gbk->fromUnicode(QString::fromUtf8("名,值\n张三,1\n"));
+        ParseResult r = CsvReader::read(b, CsvOptions{});   // 无 forced,自动
+        QVERIFY(r.ok);
+        QCOMPARE(r.detectedCodec, QString("GBK"));           // 非法 UTF-8 → 回退 GBK
+        QCOMPARE(r.rows.at(0).at(0), QString::fromUtf8("张三"));
+    }
+
+    void unterminatedQuoteIsError() {
+        QByteArray b = "h\n\"abc\n";
+        ParseResult r = CsvReader::read(b, CsvOptions{});
+        QVERIFY(!r.ok);
+        QVERIFY(!r.error.isEmpty());
+    }
+};
+
 // ── TstHistoryStore ───────────────────────────────────────────
 class TstHistoryStore : public QObject {
     Q_OBJECT
@@ -233,6 +338,7 @@ int main(int argc, char **argv) {
     int result = 0;
     { TstConnData t; result |= QTest::qExec(&t, argc, argv); }
     { TstExporter t; result |= QTest::qExec(&t, argc, argv); }
+    { TstCsvReader t; result |= QTest::qExec(&t, argc, argv); }
     { TstHistoryStore t; result |= QTest::qExec(&t, argc, argv); }
     { TstGridUtils t; result |= QTest::qExec(&t, argc, argv); }
     return result;

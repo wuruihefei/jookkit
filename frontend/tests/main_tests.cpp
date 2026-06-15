@@ -17,6 +17,7 @@
 #include "import/CsvReader.h"
 #include "import/JsonReader.h"
 #include "import/ColumnMapping.h"
+#include "import/ImportRunner.h"
 
 // ── TstConnData ───────────────────────────────────────────────
 class TstConnData : public QObject {
@@ -376,6 +377,83 @@ private slots:
     }
 };
 
+// ── TstImportRunner ───────────────────────────────────────────
+class TstImportRunner : public QObject {
+    Q_OBJECT
+private:
+    // 含 "BAD" 的 SQL 视为执行失败,否则成功
+    static ImportRunner::Executor markerExec(int *calls) {
+        return [calls](const QString &sql) -> ExecOutcome {
+            if (calls) ++(*calls);
+            if (sql.contains("BAD")) return ExecOutcome{false, "bad row"};
+            return ExecOutcome{true, QString()};
+        };
+    }
+private slots:
+    void allSuccessUsesBatches() {
+        QList<QStringList> rows{{"1","x"},{"2","y"},{"3","z"},{"4","w"},{"5","v"}};
+        QVector<int> lines{2,3,4,5,6};
+        int calls = 0;
+        ImportResult r = ImportRunner::run("t", {"a","b"}, rows, "mysql", lines,
+                                           markerExec(&calls), 2, nullptr);
+        QCOMPARE(r.total, 5);
+        QCOMPARE(r.success, 5);
+        QVERIFY(r.failures.isEmpty());
+        QCOMPARE(calls, 3);              // 批量:ceil(5/2)=3 次
+        QVERIFY(!r.canceled);
+    }
+
+    void oneBadRowFallsBackPerRow() {
+        QList<QStringList> rows{{"1","x"},{"2","y"},{"3","BAD"},{"4","z"}};
+        QVector<int> lines{2,3,4,5};
+        int calls = 0;
+        ImportResult r = ImportRunner::run("t", {"a","b"}, rows, "mysql", lines,
+                                           markerExec(&calls), 4, nullptr);
+        QCOMPARE(r.total, 4);
+        QCOMPARE(r.success, 3);          // 坏批回退后 3 行成功
+        QCOMPARE(r.failures.size(), 1);
+        QCOMPARE(r.failures.at(0).line, 4);                 // sourceLines[2]
+        QCOMPARE(r.failures.at(0).data, QStringList({"3","BAD"}));
+        QCOMPARE(calls, 5);             // 1 批 + 4 逐行
+    }
+
+    void wholeBatchAllBad() {
+        QList<QStringList> rows{{"1","BAD"},{"2","BAD"}};
+        QVector<int> lines{2,3};
+        int calls = 0;
+        ImportResult r = ImportRunner::run("t", {"a","b"}, rows, "mysql", lines,
+                                           markerExec(&calls), 2, nullptr);
+        QCOMPARE(r.success, 0);
+        QCOMPARE(r.failures.size(), 2);
+        QCOMPARE(calls, 3);             // 1 批 + 2 逐行
+    }
+
+    void cancelStopsEarly() {
+        QList<QStringList> rows{{"1","a"},{"2","b"},{"3","c"},{"4","d"},{"5","e"},{"6","f"}};
+        QVector<int> lines{2,3,4,5,6,7};
+        int calls = 0;
+        ImportRunner::Progress cancelNow = [](int, int){ return false; };
+        ImportResult r = ImportRunner::run("t", {"a","b"}, rows, "mysql", lines,
+                                           markerExec(&calls), 2, cancelNow);
+        QVERIFY(r.canceled);
+        QCOMPARE(r.success, 2);         // 仅第一批
+        QCOMPARE(calls, 1);            // 取消后不再执行
+        QCOMPARE(r.total, 6);
+    }
+
+    void batchSizeOneNoDoubleExec() {
+        QList<QStringList> rows{{"1","x"},{"2","BAD"},{"3","z"}};
+        QVector<int> lines{2,3,4};
+        int calls = 0;
+        ImportResult r = ImportRunner::run("t", {"a","b"}, rows, "mysql", lines,
+                                           markerExec(&calls), 1, nullptr);
+        QCOMPARE(r.success, 2);
+        QCOMPARE(r.failures.size(), 1);
+        QCOMPARE(r.failures.at(0).line, 3);
+        QCOMPARE(calls, 3);             // 每行一次,坏行不二次执行
+    }
+};
+
 // ── TstHistoryStore ───────────────────────────────────────────
 class TstHistoryStore : public QObject {
     Q_OBJECT
@@ -469,6 +547,7 @@ int main(int argc, char **argv) {
     { TstCsvReader t; result |= QTest::qExec(&t, argc, argv); }
     { TstJsonReader t; result |= QTest::qExec(&t, argc, argv); }
     { TstColumnMapping t; result |= QTest::qExec(&t, argc, argv); }
+    { TstImportRunner t; result |= QTest::qExec(&t, argc, argv); }
     { TstHistoryStore t; result |= QTest::qExec(&t, argc, argv); }
     { TstGridUtils t; result |= QTest::qExec(&t, argc, argv); }
     return result;

@@ -49,6 +49,8 @@ void ObjectTree::showContextMenu(const QPoint &pos) {
         const QString table = item->text(0);
         menu.addAction(Icons::data(), tr("打开数据"), this, [=]{ emit tableActivated(connId, db, table); });
         menu.addAction(Icons::structure(), tr("查看结构"), this, [=]{ emit structureRequested(connId, db, table); });
+        menu.addSeparator();
+        menu.addAction(Icons::add(), tr("导入数据到此表..."), this, [=]{ emit dataImportRequested(connId, db, table); });
     } else {
         return;
     }

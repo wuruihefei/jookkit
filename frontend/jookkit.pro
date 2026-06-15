@@ -21,6 +21,7 @@ SOURCES += \
     src/ui/GridUtils.cpp \
     src/ui/TableStructureForm.cpp \
     src/ui/TableDataForm.cpp \
+    src/ui/ImportDialog.cpp \
     src/ui/InformationPane.cpp \
     src/ui/Icons.cpp \
     src/ui/OptionsDialog.cpp \
@@ -52,6 +53,7 @@ HEADERS += \
     src/ui/GridUtils.h \
     src/ui/TableStructureForm.h \
     src/ui/TableDataForm.h \
+    src/ui/ImportDialog.h \
     src/ui/InformationPane.h \
     src/ui/Icons.h \
     src/ui/OptionsDialog.h \

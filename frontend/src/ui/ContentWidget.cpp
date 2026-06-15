@@ -3,6 +3,7 @@
 #include "ui/QueryForm.h"
 #include "ui/TableDataForm.h"
 #include "ui/TableStructureForm.h"
+#include "ui/ImportDialog.h"
 #include "ui/InformationPane.h"
 #include "ui/Icons.h"
 
@@ -30,6 +31,7 @@ ContentWidget::ContentWidget(BackendClient *client, QWidget *parent)
     });
     connect(tree_, &ObjectTree::tableActivated, this, &ContentWidget::openTableData);
     connect(tree_, &ObjectTree::structureRequested, this, &ContentWidget::openTableStructure);
+    connect(tree_, &ObjectTree::dataImportRequested, this, &ContentWidget::openImportDialog);
     connect(tree_, &QTreeWidget::currentItemChanged, this, &ContentWidget::updateInfo);
 
     // 左:对象树(对象操作已在顶部工具栏与右键菜单,故不再重复加小工具栏)
@@ -148,6 +150,19 @@ void ContentWidget::openTableStructure(const QString &connId, const QString &db,
         if (c.connId == connId) { dbType = c.type; break; }
     addTab(new TableStructureForm(client_, connId, db, table, dbType),
            tr("结构: %1").arg(table));
+}
+
+void ContentWidget::openImportDialog(const QString &connId, const QString &db, const QString &table) {
+    if (!tree_->ensureOpen(connId)) {
+        QMessageBox::warning(this, tr("导入数据"),
+                             tr("无法打开连接 \"%1\",请检查连接配置").arg(connId));
+        return;
+    }
+    QString dbType;
+    for (const ConnData &c : tree_->allConnections())
+        if (c.connId == connId) { dbType = c.type; break; }
+    ImportDialog dlg(client_, connId, db, table, dbType, this);
+    dlg.exec();
 }
 
 void ContentWidget::viewCurrentData() {

@@ -117,9 +117,29 @@ private slots:
         QStringList headers{"id", "name", "age"};
         QList<QStringList> rows{{"1", "Alice"}};  // missing "age" column
         QByteArray out = Exporter::toInsertSql("t", headers, rows, "mysql", false);
-        // Should produce 3 values, not 2
+        // 缺列 = QString()(null)= NULL,而非空串
         QCOMPARE(QString::fromUtf8(out),
-            QString("INSERT INTO `t` (`id`, `name`, `age`) VALUES ('1', 'Alice', '');\n"));
+            QString("INSERT INTO `t` (`id`, `name`, `age`) VALUES ('1', 'Alice', NULL);\n"));
+    }
+
+    // null QString → SQL NULL;空串 QString("") → '' ;普通值照旧转义
+    void insertNullVsEmpty() {
+        QStringList headers{"a", "b", "c"};
+        QStringList row;
+        row << QString() << QString("") << QString("O'Brien");
+        QList<QStringList> rows{row};
+        QByteArray out = Exporter::toInsertSql("t", headers, rows, "mysql", false);
+        QCOMPARE(QString::fromUtf8(out),
+            QString("INSERT INTO `t` (`a`, `b`, `c`) VALUES (NULL, '', 'O''Brien');\n"));
+    }
+
+    // batch 模式同样支持 NULL
+    void insertBatchWithNull() {
+        QStringList headers{"id", "v"};
+        QList<QStringList> rows{{"1", QString()}, {"2", "ok"}};
+        QByteArray out = Exporter::toInsertSql("t", headers, rows, "mysql", true);
+        QCOMPARE(QString::fromUtf8(out),
+            QString("INSERT INTO `t` (`id`, `v`) VALUES ('1', NULL), ('2', 'ok');\n"));
     }
 };
 

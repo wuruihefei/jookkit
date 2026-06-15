@@ -20,7 +20,8 @@ QString quoteIdent(const QString &id, const QString &dbType) {
 }
 
 QString quoteVal(const QString &v) {
-    return "'" + QString(v).replace("'", "''") + "'";
+    if (v.isNull()) return QStringLiteral("NULL");   // null QString = SQL NULL
+    return "'" + QString(v).replace("'", "''") + "'"; // 含空串"":输出 ''
 }
 }
 

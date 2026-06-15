@@ -16,6 +16,7 @@
 #include "ui/GridUtils.h"
 #include "import/CsvReader.h"
 #include "import/JsonReader.h"
+#include "import/ColumnMapping.h"
 
 // ── TstConnData ───────────────────────────────────────────────
 class TstConnData : public QObject {
@@ -319,6 +320,62 @@ private slots:
     }
 };
 
+// ── TstColumnMapping ──────────────────────────────────────────
+class TstColumnMapping : public QObject {
+    Q_OBJECT
+private slots:
+    void autoMatchExact() {
+        QMap<QString, int> m = ColumnMapping::autoMatch({"id", "name"}, {"id", "name"});
+        QCOMPARE(m.size(), 2);
+        QCOMPARE(m.value("id"), 0);
+        QCOMPARE(m.value("name"), 1);
+    }
+
+    void autoMatchCaseAndSpaceInsensitive() {
+        QMap<QString, int> m = ColumnMapping::autoMatch({"  ID ", "Name"}, {"id", "name"});
+        QCOMPARE(m.size(), 2);
+        QCOMPARE(m.value("id"), 0);
+        QCOMPARE(m.value("name"), 1);
+    }
+
+    void autoMatchPartial() {
+        // 文件有 extra(表里没有)→ 忽略;表有 id(文件没有)→ 不映射
+        QMap<QString, int> m = ColumnMapping::autoMatch({"name", "age", "extra"},
+                                                        {"id", "name", "age"});
+        QCOMPARE(m.size(), 2);
+        QVERIFY(!m.contains("id"));
+        QCOMPARE(m.value("name"), 0);
+        QCOMPARE(m.value("age"), 1);
+    }
+
+    void applyOnlyMappedColsInTableOrder() {
+        QStringList tableCols{"id", "name", "age"};
+        QMap<QString, int> mapping; mapping["name"] = 0; mapping["age"] = 1;
+        QList<QStringList> rows{{"Alice", "30"}, {"Bob", "25"}};
+        QStringList outCols; QList<QStringList> outRows;
+        ColumnMapping::apply(rows, tableCols, mapping, outCols, outRows);
+        QCOMPARE(outCols, QStringList({"name", "age"}));   // id 未映射 → 不输出
+        QCOMPARE(outRows.size(), 2);
+        QCOMPARE(outRows.at(0), QStringList({"Alice", "30"}));
+        QCOMPARE(outRows.at(1), QStringList({"Bob", "25"}));
+    }
+
+    void applyPreservesNullAndShortRow() {
+        QStringList tableCols{"a", "b"};
+        QMap<QString, int> mapping; mapping["a"] = 0; mapping["b"] = 1;
+        QStringList r0; r0 << QString() << "x";            // a 为 null
+        QStringList r1; r1 << "y";                          // 缺 index1
+        QList<QStringList> rows{r0, r1};
+        QStringList outCols; QList<QStringList> outRows;
+        ColumnMapping::apply(rows, tableCols, mapping, outCols, outRows);
+        QCOMPARE(outCols, QStringList({"a", "b"}));
+        QVERIFY(outRows.at(0).at(0).isNull());             // null 透传
+        QCOMPARE(outRows.at(0).at(1), QString("x"));
+        QCOMPARE(outRows.at(1).at(0), QString("y"));
+        QVERIFY(outRows.at(1).at(1).isNull());             // 越界 → NULL
+    }
+};
+
 // ── TstHistoryStore ───────────────────────────────────────────
 class TstHistoryStore : public QObject {
     Q_OBJECT
@@ -411,6 +468,7 @@ int main(int argc, char **argv) {
     { TstExporter t; result |= QTest::qExec(&t, argc, argv); }
     { TstCsvReader t; result |= QTest::qExec(&t, argc, argv); }
     { TstJsonReader t; result |= QTest::qExec(&t, argc, argv); }
+    { TstColumnMapping t; result |= QTest::qExec(&t, argc, argv); }
     { TstHistoryStore t; result |= QTest::qExec(&t, argc, argv); }
     { TstGridUtils t; result |= QTest::qExec(&t, argc, argv); }
     return result;

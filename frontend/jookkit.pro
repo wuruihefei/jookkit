@@ -36,6 +36,7 @@ SOURCES += \
     src/export/Exporter.cpp \
     src/import/CsvReader.cpp \
     src/import/JsonReader.cpp \
+    src/import/ColumnMapping.cpp \
     src/backend/ConnData.cpp \
     src/backend/BackendProcess.cpp \
     src/backend/BackendClient.cpp
@@ -66,6 +67,7 @@ HEADERS += \
     src/import/ParseResult.h \
     src/import/CsvReader.h \
     src/import/JsonReader.h \
+    src/import/ColumnMapping.h \
     src/backend/ConnData.h \
     src/backend/BackendProcess.h \
     src/backend/BackendClient.h \

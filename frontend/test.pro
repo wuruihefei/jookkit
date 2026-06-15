@@ -13,7 +13,8 @@ SOURCES += \
     src/export/Exporter.cpp \
     src/ui/GridUtils.cpp \
     src/import/CsvReader.cpp \
-    src/import/JsonReader.cpp
+    src/import/JsonReader.cpp \
+    src/import/ColumnMapping.cpp
 
 HEADERS += \
     src/backend/ConnData.h \
@@ -25,7 +26,8 @@ HEADERS += \
     src/ui/GridUtils.h \
     src/import/ParseResult.h \
     src/import/CsvReader.h \
-    src/import/JsonReader.h
+    src/import/JsonReader.h \
+    src/import/ColumnMapping.h
 
 SOURCES += \
     src/store/HistoryStore.cpp

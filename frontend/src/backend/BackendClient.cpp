@@ -35,7 +35,7 @@ BackendClient::Result BackendClient::call(const QJsonObject &request, int timeou
                                 _funcId == FuncId::DELETE_ROW);
 
     auto _recordHistory = [&](const Result &r) {
-        if (!_isExecClass) return;
+        if (!_isExecClass || !historyEnabled_) return;
         // skip internal USE statements (database switch, not user SQL)
         const QString _sql = request.value("sql").toString();
         if (_sql.trimmed().startsWith("USE ", Qt::CaseInsensitive)) return;

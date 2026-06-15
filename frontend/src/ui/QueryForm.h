@@ -9,6 +9,7 @@
 class QTableWidget;
 class QLabel;
 class QComboBox;
+class QLineEdit;
 class SqlEditor;
 class BackendClient;
 class QJsonObject;
@@ -32,6 +33,10 @@ public slots:
 
 private slots:
     void onConnChanged(int index);
+    void applyGridFilter(const QString &text);
+    void exportResult();
+    void copySelection();
+    void showCellValue(int row, int col);
 
 private:
     ConnData currentConn() const;
@@ -46,6 +51,7 @@ private:
     QComboBox *dbCombo_;
     SqlEditor *editor_;
     QTableWidget *grid_;
+    QLineEdit *filterEdit_ = nullptr;
     QLabel *status_;
 };
 

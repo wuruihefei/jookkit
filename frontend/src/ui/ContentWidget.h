@@ -38,6 +38,7 @@ public slots:
     void viewCurrentStructure();
     void openTableData(const QString &connId, const QString &db, const QString &table);
     void openTableStructure(const QString &connId, const QString &db, const QString &table);
+    void openImportDialog(const QString &connId, const QString &db, const QString &table);
     void closeCurrentTab();
     void closeOtherTabs();
     void closeAllTabs();

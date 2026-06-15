@@ -34,6 +34,9 @@ JookKit 在架构上复刻了 jookdb 的实际实现路径——C++/Qt 负责全
 - **表结构查看与编辑**：字段改名/改类型/可空/增删列，类型下拉随数据源（MySQL/SQLite），本地校验后生成 ALTER 确认执行
 - **用户管理**（MySQL）：用户的查看与管理
 - **信息窗格**：DDL、索引等对象信息展示
+- **SQL 执行历史**：自动记录执行过的 SQL（连接/库/耗时/行数/成败），面板内搜索、双击送回编辑器、可配置保留条数与天数
+- **结果网格增强**：表头排序、关键字筛选（当前数据）、复制为 TSV、单元格大值查看
+- **结果导出**：把查询结果（全部/选中/筛选后）导出为 CSV（UTF-8 BOM）、JSON、SQL INSERT
 
 ## 构建与打包
 
@@ -72,7 +75,7 @@ JOOKKIT_JAR=../backend/target/jookkit-backend.jar QT_QPA_PLATFORM=offscreen ./ts
 
 两种方式（详见 [frontend/WINDOWS.md](frontend/WINDOWS.md)）：
 
-1. **Windows 原生构建**：在 Qt 5.15 (MinGW 64-bit) 命令行中运行 `frontend\pack_windows.bat`，自动完成「后端 jar 构建 → qmake/mingw32-make 编 release → windeployqt 收集 DLL → 打 zip」，产物 `frontend\dist\JookKit-win.zip`（目标机需安装 Java 17）。
+1. **Windows 原生构建**：在 Qt 5.15 (MinGW 64-bit) 命令行中运行 `frontend\pack_windows.bat`，自动完成「后端 jar 构建 → qmake/mingw32-make 编 release → windeployqt 收集 DLL → 打 zip → 部署到 `D:\dev\JookKit`」，产物 `frontend\dist\JookKit-win.zip`（目标机需安装 Java 17）。部署前需关闭正在运行的 jookkit.exe，否则该步自动跳过。
 2. **Linux 交叉编译**：基于 MXE Qt5 的 Docker 交叉编译，运行 `frontend/docker/pack-cross.sh`，产出自包含 zip（exe + Qt DLL + 内置 JRE + 后端 jar），目标机免装 Java。
 
 ## 开源协议

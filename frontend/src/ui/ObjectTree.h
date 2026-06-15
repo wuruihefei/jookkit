@@ -40,6 +40,7 @@ public:
 signals:
     void tableActivated(const QString &connId, const QString &db, const QString &table);
     void structureRequested(const QString &connId, const QString &db, const QString &table);
+    void dataImportRequested(const QString &connId, const QString &db, const QString &table);
     void connectionsChanged();  // 编辑/复制/删除连接后发出,用于持久化
 
 private slots:

@@ -45,9 +45,22 @@ copy /y ..\backend\target\jookkit-backend.jar %DIST%\backend\ >nul
 echo [5/6] windeployqt 收集 Qt 依赖 DLL...
 windeployqt --release --no-translations %DIST%\jookkit.exe || (echo windeployqt 失败 & exit /b 1)
 
-echo [6/6] 打 zip...
+echo [6/7] 打 zip...
 powershell -NoProfile -Command "Compress-Archive -Path 'dist\JookKit\*' -DestinationPath 'dist\JookKit-win.zip' -Force"
 
+echo [7/7] 部署到 D:\dev\JookKit...
+set DEPLOY=D:\dev\JookKit
+REM exe 被占用会导致覆盖失败,先确认程序已关闭
+tasklist /fi "imagename eq jookkit.exe" 2>nul | find /i "jookkit.exe" >nul && (
+    echo *** 检测到 jookkit.exe 正在运行,跳过部署。请关闭程序后手动复制,或重跑本脚本。
+    echo *** 打包产物已生成: dist\JookKit-win.zip
+    goto :done
+)
+if not exist "%DEPLOY%" mkdir "%DEPLOY%"
+REM /E 含子目录、/Y 覆盖、不删除目标已有其它文件(保留连接配置等)
+xcopy /E /I /Y dist\JookKit\* "%DEPLOY%\" >nul && (echo 已部署到 %DEPLOY%) || (echo 部署失败,请检查目录权限)
+
+:done
 echo.
 echo 完成: dist\JookKit-win.zip
 echo 运行: 解压后双击 jookkit.exe(目标机需安装 Java 17)

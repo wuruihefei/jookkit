@@ -7,6 +7,8 @@
 class BackendProcess;
 class BackendClient;
 class ContentWidget;
+class HistoryPane;
+class QDockWidget;
 class QToolBar;
 
 // 主窗口:菜单栏对齐 Navicat(文件/编辑/视图/收藏/工具/窗口/帮助)。
@@ -39,6 +41,8 @@ private:
     ContentWidget *content_;
     QToolBar *mainTb_ = nullptr;
     QMenu *favMenu_ = nullptr;
+    HistoryPane *historyPane_ = nullptr;
+    QDockWidget *histDock_ = nullptr;
 };
 
 #endif

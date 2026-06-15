@@ -409,6 +409,7 @@ void TableStructureForm::saveChanges() {
         QJsonObject req;
         req.insert("funcId", FuncId::EXEC_SQL);
         req.insert("connId", connId_);
+        req.insert("db", db_);
         req.insert("sql", sql);
         auto r = client_->call(req);
         if (!r.ok) {

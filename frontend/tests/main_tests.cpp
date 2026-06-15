@@ -15,6 +15,7 @@
 #include "store/HistoryStore.h"
 #include "ui/GridUtils.h"
 #include "import/CsvReader.h"
+#include "import/JsonReader.h"
 
 // ── TstConnData ───────────────────────────────────────────────
 class TstConnData : public QObject {
@@ -248,6 +249,76 @@ private slots:
     }
 };
 
+// ── TstJsonReader ─────────────────────────────────────────────
+class TstJsonReader : public QObject {
+    Q_OBJECT
+private slots:
+    void objectArrayBasic() {
+        QByteArray b = "[{\"id\":1,\"name\":\"Alice\"}]";
+        ParseResult r = JsonReader::read(b);
+        QVERIFY(r.ok);
+        QCOMPARE(r.rows.size(), 1);
+        QCOMPARE(r.sourceLines.size(), r.rows.size());
+        int idi = r.headers.indexOf("id"), ni = r.headers.indexOf("name");
+        QVERIFY(idi >= 0 && ni >= 0);
+        QCOMPARE(r.rows.at(0).at(idi), QString("1"));
+        QCOMPARE(r.rows.at(0).at(ni), QString("Alice"));
+    }
+
+    void keyUnionAndMissing() {
+        QByteArray b = "[{\"a\":1},{\"b\":2,\"a\":3}]";
+        ParseResult r = JsonReader::read(b);
+        QVERIFY(r.ok);
+        QCOMPARE(r.headers.size(), 2);
+        QVERIFY(r.headers.contains("a"));
+        QVERIFY(r.headers.contains("b"));
+        int ai = r.headers.indexOf("a"), bi = r.headers.indexOf("b");
+        QCOMPARE(r.rows.size(), 2);
+        QCOMPARE(r.rows.at(0).at(ai), QString("1"));
+        QVERIFY(r.rows.at(0).at(bi).isNull());        // obj1 缺 b → NULL
+        QCOMPARE(r.rows.at(1).at(ai), QString("3"));
+        QCOMPARE(r.rows.at(1).at(bi), QString("2"));
+    }
+
+    void nullAndMissingAndEmpty() {
+        QByteArray b = "[{\"a\":null,\"b\":\"\"},{}]";
+        ParseResult r = JsonReader::read(b);
+        QVERIFY(r.ok);
+        int ai = r.headers.indexOf("a"), bi = r.headers.indexOf("b");
+        QVERIFY(r.rows.at(0).at(ai).isNull());        // null → NULL
+        QVERIFY(r.rows.at(0).at(bi).isEmpty());
+        QVERIFY(!r.rows.at(0).at(bi).isNull());        // "" → 空串非 NULL
+        QVERIFY(r.rows.at(1).at(ai).isNull());        // 缺键 → NULL
+        QVERIFY(r.rows.at(1).at(bi).isNull());
+    }
+
+    void numbersAndBoolsTextified() {
+        QByteArray b = "[{\"i\":123,\"f\":1.5,\"flag\":true}]";
+        ParseResult r = JsonReader::read(b);
+        QVERIFY(r.ok);
+        int ii = r.headers.indexOf("i"), fi = r.headers.indexOf("f"), gi = r.headers.indexOf("flag");
+        QCOMPARE(r.rows.at(0).at(ii), QString("123"));   // 整数不带 .0
+        QCOMPARE(r.rows.at(0).at(fi), QString("1.5"));
+        QCOMPARE(r.rows.at(0).at(gi), QString("true"));
+    }
+
+    void topLevelNotArrayIsError() {
+        ParseResult r = JsonReader::read("{\"a\":1}");
+        QVERIFY(!r.ok);
+        QVERIFY(!r.error.isEmpty());
+    }
+
+    void elementNotObjectIsError() {
+        ParseResult r = JsonReader::read("[1,2]");
+        QVERIFY(!r.ok);
+    }
+
+    void invalidJsonIsError() {
+        ParseResult r = JsonReader::read("not json");
+        QVERIFY(!r.ok);
+    }
+};
+
 // ── TstHistoryStore ───────────────────────────────────────────
 class TstHistoryStore : public QObject {
     Q_OBJECT
@@ -339,6 +410,7 @@ int main(int argc, char **argv) {
     { TstConnData t; result |= QTest::qExec(&t, argc, argv); }
     { TstExporter t; result |= QTest::qExec(&t, argc, argv); }
     { TstCsvReader t; result |= QTest::qExec(&t, argc, argv); }
+    { TstJsonReader t; result |= QTest::qExec(&t, argc, argv); }
     { TstHistoryStore t; result |= QTest::qExec(&t, argc, argv); }
     { TstGridUtils t; result |= QTest::qExec(&t, argc, argv); }
     return result;

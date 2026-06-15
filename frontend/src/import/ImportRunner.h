@@ -28,7 +28,7 @@ namespace ImportRunner {
     using Executor = std::function<ExecOutcome(const QString &sql)>;
     using Progress = std::function<bool(int done, int total)>;   // 返回 false = 请求取消
 
-    ImportResult run(const QString &table, const QStringList &cols,
+    ImportResult run(const QString &table, const QString &db, const QStringList &cols,
                      const QList<QStringList> &rows, const QString &dbType,
                      const QVector<int> &sourceLines,
                      Executor exec, int batchSize, Progress onProgress);

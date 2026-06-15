@@ -56,10 +56,12 @@ QByteArray Exporter::toJson(const QStringList &headers, const QList<QStringList>
 
 QByteArray Exporter::toInsertSql(const QString &table, const QStringList &headers,
                                  const QList<QStringList> &rows,
-                                 const QString &dbType, bool batch) {
+                                 const QString &dbType, bool batch, const QString &db) {
     QStringList cols;
     for (const QString &h : headers) cols << quoteIdent(h, dbType);
-    const QString tbl = quoteIdent(table, dbType);
+    const QString tbl = db.isEmpty()
+        ? quoteIdent(table, dbType)
+        : quoteIdent(db, dbType) + "." + quoteIdent(table, dbType);
     const QString colClause = "(" + cols.join(", ") + ")";
 
     auto valuesOf = [&headers](const QStringList &row) {

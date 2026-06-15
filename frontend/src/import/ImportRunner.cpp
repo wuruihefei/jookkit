@@ -4,7 +4,7 @@
 
 namespace ImportRunner {
 
-ImportResult run(const QString &table, const QStringList &cols,
+ImportResult run(const QString &table, const QString &db, const QStringList &cols,
                  const QList<QStringList> &rows, const QString &dbType,
                  const QVector<int> &sourceLines,
                  Executor exec, int batchSize, Progress onProgress) {
@@ -18,7 +18,7 @@ ImportResult run(const QString &table, const QStringList &cols,
         const QList<QStringList> slice = rows.mid(i, end - i);
 
         const QString batchSql =
-            QString::fromUtf8(Exporter::toInsertSql(table, cols, slice, dbType, /*batch=*/true));
+            QString::fromUtf8(Exporter::toInsertSql(table, cols, slice, dbType, /*batch=*/true, db));
         const ExecOutcome o = exec(batchSql);
 
         if (o.ok) {
@@ -30,7 +30,7 @@ ImportResult run(const QString &table, const QStringList &cols,
             // 批失败回退逐行,定位坏行;成功行照常计入
             for (int j = 0; j < slice.size(); ++j) {
                 const QString oneSql = QString::fromUtf8(
-                    Exporter::toInsertSql(table, cols, { slice.at(j) }, dbType, /*batch=*/false));
+                    Exporter::toInsertSql(table, cols, { slice.at(j) }, dbType, /*batch=*/false, db));
                 const ExecOutcome oo = exec(oneSql);
                 if (oo.ok)
                     res.success++;

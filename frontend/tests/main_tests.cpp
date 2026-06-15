@@ -138,6 +138,15 @@ private slots:
             QString("INSERT INTO `t` (`a`, `b`, `c`) VALUES (NULL, '', 'O''Brien');\n"));
     }
 
+    // 传入 db 时限定为 `db`.`table`(导入到非默认库)
+    void insertWithDbQualified() {
+        QStringList headers{"id"};
+        QList<QStringList> rows{{"1"}};
+        QByteArray out = Exporter::toInsertSql("t", headers, rows, "mysql", false, "mydb");
+        QCOMPARE(QString::fromUtf8(out),
+            QString("INSERT INTO `mydb`.`t` (`id`) VALUES ('1');\n"));
+    }
+
     // batch 模式同样支持 NULL
     void insertBatchWithNull() {
         QStringList headers{"id", "v"};
@@ -394,7 +403,7 @@ private slots:
         QList<QStringList> rows{{"1","x"},{"2","y"},{"3","z"},{"4","w"},{"5","v"}};
         QVector<int> lines{2,3,4,5,6};
         int calls = 0;
-        ImportResult r = ImportRunner::run("t", {"a","b"}, rows, "mysql", lines,
+        ImportResult r = ImportRunner::run("t", "", {"a","b"}, rows, "mysql", lines,
                                            markerExec(&calls), 2, nullptr);
         QCOMPARE(r.total, 5);
         QCOMPARE(r.success, 5);
@@ -407,7 +416,7 @@ private slots:
         QList<QStringList> rows{{"1","x"},{"2","y"},{"3","BAD"},{"4","z"}};
         QVector<int> lines{2,3,4,5};
         int calls = 0;
-        ImportResult r = ImportRunner::run("t", {"a","b"}, rows, "mysql", lines,
+        ImportResult r = ImportRunner::run("t", "", {"a","b"}, rows, "mysql", lines,
                                            markerExec(&calls), 4, nullptr);
         QCOMPARE(r.total, 4);
         QCOMPARE(r.success, 3);          // 坏批回退后 3 行成功
@@ -421,7 +430,7 @@ private slots:
         QList<QStringList> rows{{"1","BAD"},{"2","BAD"}};
         QVector<int> lines{2,3};
         int calls = 0;
-        ImportResult r = ImportRunner::run("t", {"a","b"}, rows, "mysql", lines,
+        ImportResult r = ImportRunner::run("t", "", {"a","b"}, rows, "mysql", lines,
                                            markerExec(&calls), 2, nullptr);
         QCOMPARE(r.success, 0);
         QCOMPARE(r.failures.size(), 2);
@@ -433,7 +442,7 @@ private slots:
         QVector<int> lines{2,3,4,5,6,7};
         int calls = 0;
         ImportRunner::Progress cancelNow = [](int, int){ return false; };
-        ImportResult r = ImportRunner::run("t", {"a","b"}, rows, "mysql", lines,
+        ImportResult r = ImportRunner::run("t", "", {"a","b"}, rows, "mysql", lines,
                                            markerExec(&calls), 2, cancelNow);
         QVERIFY(r.canceled);
         QCOMPARE(r.success, 2);         // 仅第一批
@@ -441,11 +450,22 @@ private slots:
         QCOMPARE(r.total, 6);
     }
 
+    void dbQualifiedSqlPassed() {
+        QList<QStringList> rows{{"1"}};
+        QVector<int> lines{2};
+        QString captured;
+        ImportRunner::Executor cap = [&](const QString &sql) {
+            captured = sql; return ExecOutcome{true, QString()};
+        };
+        ImportRunner::run("t", "mydb", {"a"}, rows, "mysql", lines, cap, 10, nullptr);
+        QVERIFY(captured.contains("`mydb`.`t`"));
+    }
+
     void batchSizeOneNoDoubleExec() {
         QList<QStringList> rows{{"1","x"},{"2","BAD"},{"3","z"}};
         QVector<int> lines{2,3,4};
         int calls = 0;
-        ImportResult r = ImportRunner::run("t", {"a","b"}, rows, "mysql", lines,
+        ImportResult r = ImportRunner::run("t", "", {"a","b"}, rows, "mysql", lines,
                                            markerExec(&calls), 1, nullptr);
         QCOMPARE(r.success, 2);
         QCOMPARE(r.failures.size(), 1);
